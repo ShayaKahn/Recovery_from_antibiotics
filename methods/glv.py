@@ -1,8 +1,8 @@
-from scipy.integrate import solve_ivp
-from cython_modules.glv_functions import f, g, event
-from dask import delayed, compute
-from dask.distributed import Client
 import numpy as np
+from scipy.integrate import solve_ivp
+from cython_modules.glv_functions import f, event
+from dask import delayed
+from joblib import Parallel, delayed
 
 class Glv:
     """
@@ -10,7 +10,7 @@ class Glv:
     for a given parameters.
     """
     def __init__(self, n_samples, n_species, delta, r, s, interaction_matrix, initial_cond, final_time, max_step,
-                 normalize=True, method='RK45', multiprocess=True):
+                 normalize=True, method='RK45', multiprocess=True, n_jobs=4):
         """
         Inputs:
         n_samples: The number of samples you are need to compute.
@@ -28,20 +28,17 @@ class Glv:
         """
 
         (self.smp, self.n, self.delta, self.r, self.s, self.A, self.Y, self.final_time, self.max_step, self.normalize,
-         self.method, self.multiprocess) = Glv._validate_input(n_samples, n_species, delta, r, s, interaction_matrix,
-                                                               initial_cond, final_time, max_step, normalize, method,
-                                                               multiprocess)
-
-        if self.multiprocess:
-            self.client = Client(n_workers=10, threads_per_worker=1)
-
+         self.method, self.multiprocess, self.n_jobs) = Glv._validate_input(n_samples, n_species, delta, r, s,
+                                                                            interaction_matrix, initial_cond,
+                                                                            final_time, max_step, normalize, method,
+                                                                            multiprocess, n_jobs)
         # Initialization
         self.Final_abundances = np.zeros((self.n, self.smp))
         self.Final_abundances_single_sample = np.zeros(self.n)
 
     @ staticmethod
     def _validate_input(n_samples, n_species, delta, r, s, interaction_matrix, initial_cond, final_time, max_step,
-                        normalize, method, multiprocess):
+                        normalize, method, multiprocess, n_jobs):
         # Check if n_samples and n_species are integers greater than 0
         if not isinstance(n_samples, int) or n_samples <= 0:
             raise ValueError("n_samples must be an integer greater than 0.")
@@ -79,16 +76,21 @@ class Glv:
         if not (isinstance(multiprocess, bool)):
             raise ValueError("multiprocess must be of type bool.")
 
+        if not (isinstance(n_jobs, int)):
+            raise ValueError("n_jobs must be of type int.")
+
         return (n_samples, n_species, delta, r, s, interaction_matrix, initial_cond, final_time, max_step, normalize,
-                method, multiprocess)
+                method, multiprocess, n_jobs)
 
     def solve(self):
         """
         This function updates the final abundances, rows are the species and columns represent the samples.
+        Returns:
+        final_abundances: the final abundances of the samples.
+        event_not_satisfied_ind: the indexes of the samples that did not reach the steady state.
         """
         # Set the parameters to the functions f and event.
-        #f_with_params = lambda t, x: f(t, x, self.r, self.s, self.A, self.delta)
-        f_with_params = lambda t, x: g(t, x, self.r, self.s, self.A, self.delta)
+        f_with_params = lambda t, x: f(t, x, self.r, self.s, self.A, self.delta)
         event_with_params = lambda t, x: event(t, x, self.r, self.s, self.A, self.delta)
 
         # event definitions
@@ -98,9 +100,8 @@ class Glv:
         event_not_satisfied_ind = []
 
         if self.multiprocess:
-
-            sol_objects = [self.solve_for_m(f_with_params, event_with_params, m) for m in range(self.smp)]
-            solutions = compute(*sol_objects)
+            solutions = Parallel(n_jobs=self.n_jobs)(delayed(self.solve_for_m)(f_with_params, event_with_params,
+                                                                               m) for m in range(self.smp))
 
             for m, sol in enumerate(solutions):
                 self.Final_abundances[:, m] = sol.y[:, -1]
@@ -129,15 +130,18 @@ class Glv:
         else:
             return final_abundances.T, event_not_satisfied_ind
 
-    @delayed
     def solve_for_m(self, f_with_params, event_with_params,  m):
+        """
+        This function solves the GLV model for a given sample.
+        f_with_params: the function f with the parameters.
+        event_with_params: the event function with the parameters.
+        m: the sample index.
+        Returns:
+        sol: the solution of the GLV model for the given sample.
+        """
         sol = solve_ivp(f_with_params, (0, self.final_time), self.Y[m, :], max_step=self.max_step,
                         events=event_with_params, method=self.method)
         return sol
-
-    def close_client(self):
-        if self.multiprocess:
-            self.client.close()
 
     @staticmethod
     def normalize_cohort(cohort):

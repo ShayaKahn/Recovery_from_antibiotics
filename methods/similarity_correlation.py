@@ -2,11 +2,14 @@ import numpy as np
 import pandas as pd
 import operator
 import random
+from methods.similarity import Similarity
+from joblib import Parallel, delayed
+
 
 class SimilarityCorrelation:
 
     def __init__(self, ABX, baseline, post_ABX_container, baseline_ref, method, timepoints, iters, new=True,
-                 strict=True):
+                 strict=True, n_jobs=4):
         """
         ABX: pandas dataframe of shape (# test subjects, # species) that represent the antibiotic treatment samples of
              the tested subjects and the row names are the identifiers of the tested subjects.
@@ -31,13 +34,17 @@ class SimilarityCorrelation:
                  test_post_ABX_matrix.
         """
         (self.ABX, self.baseline, self.post_ABX_matrices, self.baseline_ref, self.method, self.timepoints, self.iters,
-         self.new, self.strict, self.keys, self.keys_ref) = self._validate_input(ABX, baseline, post_ABX_container,
-                                                                                 baseline_ref, method, timepoints,
-                                                                                 iters, new, strict)
+         self.new, self.strict, self.keys, self.keys_ref, self.n_jobs) = self._validate_input(ABX, baseline,
+                                                                                              post_ABX_container,
+                                                                                              baseline_ref, method,
+                                                                                              timepoints,
+                                                                                              iters, new, strict,
+                                                                                              n_jobs)
         # generate the synthetic cohorts
         self.synthetic_baseline_lst = self._generate_synthetic_cohorts()
 
-    def _validate_input(self, ABX, baseline, post_ABX_container, baseline_ref, method, timepoints, iters, new, strict):
+    def _validate_input(self, ABX, baseline, post_ABX_container, baseline_ref, method, timepoints, iters, new, strict,
+                        n_jobs):
         """
         This method validates the input of the class. The inputs description is in the __init__ function.
         """
@@ -81,8 +88,10 @@ class SimilarityCorrelation:
             raise ValueError("new must be of type bool")
         if not isinstance(strict, bool):
             raise ValueError("strict must be of type bool")
+        if not isinstance(n_jobs, int):
+            raise ValueError("n_jobs must be of type int")
         return (ABX.values.T, baseline.values.T, post_ABX_matrices, baseline_ref.values.T, method, timepoints, iters,
-                new, strict, keys, keys_ref)
+                new, strict, keys, keys_ref, n_jobs)
 
     def calc_similarity(self):
         """
@@ -95,6 +104,7 @@ class SimilarityCorrelation:
         sims_container = {}
         # iterate over the test subjects.
         for base, abx, post_mat, key in zip(self.baseline, self.ABX, self.post_ABX_matrices, self.keys):
+            print(key)
             # find the survived and resistant species.
             survived, resistant = self._find_survived_resistant(base, abx, post_mat)
             # find the returned species.
@@ -102,8 +112,8 @@ class SimilarityCorrelation:
             # find the indices of the species that are considered in the similarity calculation.
             idx = self._find_subset(base, abx, post_mat, returned_lst)
             # construct the other species set based on the timepoints parameter.
-            timpoints_secies = [np.where(r)[0] for r in returned_lst[0: self.timepoints]]
-            combined_species = [survived, resistant] + timpoints_secies
+            timpoints_sepcies = [np.where(r)[0] for r in returned_lst[0: self.timepoints]]
+            combined_species = [survived, resistant] + timpoints_sepcies
             combined_species = np.hstack(combined_species)
             sims = {}
             # iterate over the reference subjects.
@@ -111,16 +121,17 @@ class SimilarityCorrelation:
                 if key_ref != key:
                     # calculate the z-scores.
                     sim_new = self._similarity(base_ref[idx], post_mat[-1, :][idx], self.method)
-                    sim_new_shuffled = np.array([self._similarity(base_shuffled[j, :][idx], post_mat[-1, :][idx],
-                                                                  self.method) for base_shuffled in
-                                                 self.synthetic_baseline_lst])
+                    sim_new_shuffled = np.array(
+                        list(map(lambda x: self._similarity(x[j, :][idx], post_mat[-1, :][idx], self.method),
+                                 self.synthetic_baseline_lst)))
                     sim_new_z = self._z_score(sim_new, sim_new_shuffled)
                     sim_others = self._similarity(base_ref[combined_species], post_mat[-1, :][combined_species],
                                                   self.method)
-                    sim_others_shuffled = np.array([self._similarity(base_shuffled[j, :][combined_species],
-                                                                     post_mat[-1, :][combined_species],
-                                                                     self.method) for base_shuffled in
-                                                    self.synthetic_baseline_lst])
+                    sim_others_shuffled = np.array(list(map(lambda x: self._similarity(x[j, :][combined_species],
+                                                                                       post_mat[-1, :][
+                                                                                           combined_species],
+                                                                                       self.method),
+                                                            self.synthetic_baseline_lst)))
                     sim_others_z = self._z_score(sim_others, sim_others_shuffled)
                     sims[key_ref] = (sim_new_z, sim_others_z)
             sims_container[key] = sims
@@ -131,9 +142,8 @@ class SimilarityCorrelation:
         This method generates the synthetic cohorts. It returns a list of synthetic cohorts. The length of the list is
         equal to the number of iterations.
         """
-        shuffled_baseline_lst = []
-        for _ in range(self.iters):
-            shuffled_baseline_lst.append(self._create_synthetic_cohort(self.baseline_ref))
+        shuffled_baseline_lst = Parallel(n_jobs=self.n_jobs)(
+            delayed(self._create_synthetic_cohort)(self.baseline_ref) for _ in range(self.iters))
         return shuffled_baseline_lst
 
     def _find_subset(self, base, abx, post_mat, returned_lst):
@@ -218,7 +228,6 @@ class SimilarityCorrelation:
                     op_lst[j] = operator.eq
         return timepoints_vals
 
-
     @staticmethod
     def _create_synthetic_cohort(cohort):
         """
@@ -252,59 +261,6 @@ class SimilarityCorrelation:
                 pool_indices_copy = pool_indices_copy[mask]
         return synthetic_cohort
 
-    def _similarity(self, array_first, array_sec, method):
-        """
-        This method calculates the similarity between two binary samples.
-        Inputs:
-        array_first: numpy array of shape (# species,) that represent the first sample.
-        array_sec: numpy array of shape (# species,) that represent the second sample.
-        method: string, the method to calculate the similarity. Choose from 'Jaccard' and 'Dice'.
-        Returns: float, the similarity between the two samples.
-        """
-        if method == 'Jaccard':
-            return self._jaccard_similarity(array_first, array_sec)
-        elif method == 'Dice':
-            return self._dice_similarity(array_first, array_sec)
-
-    @staticmethod
-    def _jaccard_similarity(array_first, array_sec):
-        """
-        This function calculates the Jaccard similarity between two binary samples.
-        Inputs:
-        array_first: numpy array of shape (# species,) that represent the first sample.
-        array_sec: numpy array of shape (# species,) that represent the second sample.
-        Returns: jaccard similarity
-        """
-        if array_first.ndim != 1 or array_sec.ndim != 1:
-            raise ValueError("array_first and array_sec must be 1D arrays")
-        if array_first.shape != array_sec.shape:
-            raise ValueError("array_first and array_sec must have the same length")
-        intersection = np.sum(np.logical_and(array_first, array_sec))
-        union = np.sum(np.logical_or(array_first, array_sec))
-
-        return intersection / union if union != 0 else 0
-
-    @staticmethod
-    def _dice_similarity(array_first, array_sec):
-        """
-        This function calculates the Dice similarity between two binary samples.
-        Inputs:
-        array_first: numpy array of shape (# species,) that represent the first sample.
-        array_sec: numpy array of shape (# species,) that represent the second sample.
-        Returns: dice similarity
-        """
-        if array_first.ndim != 1 or array_sec.ndim != 1:
-            raise ValueError("array_first and array_sec must be 1D arrays")
-        if array_first.shape != array_sec.shape:
-            raise ValueError("array_first and array_sec must have the same length")
-        intersection = np.sum(np.logical_and(array_first, array_sec))
-        denominator = (array_first.astype(bool).sum() + array_sec.astype(bool).sum())
-        if denominator == 0:
-            dice = 0
-        else:
-            dice = 2 * intersection / denominator
-        return dice
-
     @staticmethod
     def _z_score(p, smp):
         """
@@ -317,3 +273,14 @@ class SimilarityCorrelation:
         mu = np.mean(smp)
         sigma = np.std(smp)
         return (p - mu) / sigma
+
+    def _similarity(self, array_first, array_sec, method):
+        """
+        This method calculates the similarity between two binary samples.
+        Inputs:
+        array_first: numpy array of shape (# species,) that represent the first sample.
+        array_sec: numpy array of shape (# species,) that represent the second sample.
+        method: string, the method to calculate the similarity. Choose from 'Jaccard' and 'Dice'.
+        Returns: float, the similarity between the two samples.
+        """
+        return Similarity(array_first, array_sec, method).calculate_similarity()

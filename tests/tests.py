@@ -120,8 +120,6 @@ class Test_Rarify(TestCase):
     def test_rarify(self):
         rar_df_min = self.min.rarify()
         rar_df_depth = self.depth.rarify()
-        print(rar_df_min)
-        print(rar_df_depth)
 
 class Test_Similarity(TestCase):
     def setUp(self) -> None:
