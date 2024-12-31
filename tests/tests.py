@@ -3,6 +3,7 @@ from data_processing.rarify import Rarify
 from methods.surrogate import Surrogate
 from methods.similarity_correlation import SimilarityCorrelation
 from methods.similarity import Similarity
+from methods.historical_contingency import HC
 from data_processing.optimal import OptimalCohort
 from unittest import TestCase
 import numpy as np
@@ -61,11 +62,18 @@ class TestSimilarityCorrelation(TestCase):
                                                                     self.sim.post_ABX_matrices[1])
 
     def test_generate_synthetic_cohorts(self):
+        """
+        This function tests the generate_synthetic_cohorts function.
+        """
         cohorts_lst = self.sim.synthetic_baseline_lst
         for cohort in cohorts_lst:
+            # check if the constraints are satisfied
             self.assertTrue(np.array_equal(cohort.sum(axis=1), self.baseline_ref.to_numpy().T.sum(axis=1)))
 
     def test_returned_species(self):
+        """
+        This function tests the returned_species function.
+        """
         # strict
         self.assertEqual(len(self.timepoints_vals), self.post_ABX_container["A"].shape[0])
         self.assertTrue(np.array_equal(self.timepoints_vals[0], np.array([False, False, False, False, False, False,
@@ -84,6 +92,10 @@ class TestSimilarityCorrelation(TestCase):
                                                                                False, False, False, False])))
 
     def test_find_subset(self):
+        """
+        This function tests the find_subset function.
+        """
+        # check if the number of timepoints is correct
         idx = self.sim._find_subset(self.sim.baseline[0, :], self.sim.ABX[0, :], self.sim.post_ABX_matrices[0],
                                     self.timepoints_vals)
         self.assertEqual(np.size(idx), self.post_ABX_container["A"].shape[0] - self.timepoints)
@@ -106,7 +118,9 @@ class TestOptimalCohort(TestCase):
                          np.ones(np.size(self.optimal_samples[0], axis=0)).tolist())
 
 class Test_Rarify(TestCase):
-
+    """
+    This class tests the Rarify class.
+    """
     def setUp(self) -> None:
         self.df = pd.DataFrame({
                   'A': [1, 3, 0, 2],
@@ -114,14 +128,22 @@ class Test_Rarify(TestCase):
                   'C': [0, 4, 0, 0],
                   'D': [50, 12, 0, 0],
                    })
+        print(self.df.sum())
         self.min = Rarify(self.df)
         self.depth = Rarify(self.df, depth=5)
 
     def test_rarify(self):
+        # test the Rarify class using both the default and the depth parameter
         rar_df_min = self.min.rarify()
+        self.assertEqual(list(rar_df_min.sum()), [4, 4, 4, 4])
         rar_df_depth = self.depth.rarify()
+        self.assertEqual(list(rar_df_depth.sum()), [5, 5, 5])
+
 
 class Test_Similarity(TestCase):
+    """
+    This class tests the Similarity class.
+    """
     def setUp(self) -> None:
         self.first_sample = np.array([[0.1, 0, 0.2, 0.4, 0, 0, 0.1, 0.3]])
         self.sample = np.array([[0.1, 0, 0.2, 0.7, 0, 0, 0.2, 0]])
@@ -131,6 +153,9 @@ class Test_Similarity(TestCase):
                                 [0.9, 0, 0, 0, 0, 0, 0, 0.2]])
 
     def test_jaccard(self):
+        """
+        This function tests the Jaccard similarity method for sample and matrix cases.
+        """
         # sample
         similarity_smp = Similarity(self.first_sample, self.sample, method='Jaccard', norm=True)
         jaccard_val = similarity_smp.calculate_similarity()
@@ -145,6 +170,9 @@ class Test_Similarity(TestCase):
         self.assertTrue(np.allclose(list(similarity_mat.matrix.sum(axis=1)), list(np.ones((4,)))))
 
     def test_overlap(self):
+        """
+        This function tests the Overlap similarity method for sample and matrix cases.
+        """
         # sample
         similarity_smp = Similarity(self.first_sample, self.sample, method='Overlap', norm=False)
         overlap_val = similarity_smp.calculate_similarity()
@@ -159,6 +187,9 @@ class Test_Similarity(TestCase):
         self.assertFalse(np.allclose(list(similarity_mat.matrix.sum(axis=1)), [1, 1, 1, 1]))
 
     def test_dice(self):
+        """
+        This function tests the Dice similarity method for sample and matrix cases.
+        """
         # sample
         similarity_smp = Similarity(self.first_sample, self.sample, method='Dice', norm=True)
         dice_val = similarity_smp.calculate_similarity()
@@ -169,6 +200,9 @@ class Test_Similarity(TestCase):
         self.assertListEqual(list(dice_val_mat), [8/9, 4/9, 4/9, 4/7])
 
     def test_szymkiewicz_simpson(self):
+        """
+        This function tests the Szymkiewicz Simpson similarity method for sample and matrix cases.
+        """
         # sample
         similarity_smp = Similarity(self.first_sample, self.sample, method='Szymkiewicz Simpson',
                                     norm=True)
@@ -181,6 +215,9 @@ class Test_Similarity(TestCase):
         self.assertListEqual(list(ss_val_mat), [1, 0.5, 0.5, 1])
 
     def test_recovery(self):
+        """
+        This function tests the Recovery similarity method for sample and matrix cases.
+        """
         # sample
         similarity_smp = Similarity(self.first_sample, self.sample, method='Recovery',
                                     norm=True)
@@ -193,6 +230,9 @@ class Test_Similarity(TestCase):
         self.assertListEqual(list(recovery_val_mat), [0.8, 0.4, 0.4, 0.4])
 
     def test_specificity(self):
+        """
+        This function tests the Specificity similarity method for sample and matrix cases.
+        """
         # sample
         similarity_smp = Similarity(self.first_sample, self.sample, method='Specificity',
                                     norm=True)
@@ -205,6 +245,9 @@ class Test_Similarity(TestCase):
         self.assertListEqual(list(specificity_val_mat), [1, 0.5, 0.5, 1])
 
     def test_weighted_jaccard(self):
+        """
+        This function tests the Weighted Jaccard similarity method for sample and matrix cases.
+        """
         # sample
         similarity_smp = Similarity(self.first_sample, self.sample, method='Weighted Jaccard',
                                     norm=False)
@@ -217,6 +260,9 @@ class Test_Similarity(TestCase):
         self.assertTrue(np.allclose(list(jaccard_w_val_mat), [0.8/1.1, 0.3/1.1, 0.3/1.1, 0.4/1.1]))
 
     def test_weighted_jaccard_symmetric(self):
+        """
+        This function tests the Weighted Jaccard symmetric similarity method.
+        """
         # sample
         similarity_smp = Similarity(self.first_sample, self.sample, method='Weighted Jaccard symmetric',
                                     norm=False)
@@ -225,6 +271,9 @@ class Test_Similarity(TestCase):
 
 
 class Test_NullModel(TestCase):
+    """
+    This class tests the NullModel class.
+    """
     def setUp(self) -> None:
         self.baseline_sample = np.array([0.1, 0, 0, 0.2, 0.3, 0.1, 0, 0.1, 0.2, 0])
         self.ABX_sample = np.array([0, 0, 0.3, 0.1, 0, 0.1, 0, 0, 0, 0.5])
@@ -239,11 +288,17 @@ class Test_NullModel(TestCase):
                                     self.test_matrix, self.num_reals, self.timepoints)
 
     def test_find_subset(self):
+        """
+        This function tests the find_subset function.
+        """
         self.assertListEqual(list(self.null_model.subset_comp), [0, 2, 4, 5])
         self.assertListEqual(list(self.null_model.subset), [1, 3, 6, 7, 8, 9])
         self.assertEqual(np.size(self.null_model.subset_comp) + np.size(self.null_model.subset), self.baseline.shape[1])
 
     def test_distance(self):
+        """
+        This function tests the distance function.
+        """
         # Test the constraint
         self.assertEqual(np.size(np.nonzero(self.null_model.synthetic_samples[0, self.null_model.subset])),
                          np.size(np.nonzero(self.test_matrix[-1, :][self.null_model.subset])))
@@ -251,6 +306,9 @@ class Test_NullModel(TestCase):
 
 
 class Test_Surrogate(TestCase):
+    """
+    This class tests the Surrogate class.
+    """
     def setUp(self) -> None:
         self.test_post_abx_matrix = np.array([[1, 0, 1, 0, 0, 0, 0, 1],
                                               [1, 0, 1, 1, 0, 1, 0, 1],
@@ -287,11 +345,98 @@ class Test_Surrogate(TestCase):
         self.results_mat = self.surrogate_mat.apply_surrogate_data_analysis()
 
     def test_find_subset(self):
+        """
+        This function tests the find_subset function.
+        """
         self.assertListEqual(list(self.surrogate.subset), [2, 3, 4, 5, 6, 7])
         self.assertListEqual(list(self.surrogate_not_strict.subset), [3, 4, 5, 6, 7])
         self.assertListEqual(list(self.surrogate_null.subset), [2, 3, 4, 5, 6, 7])
         self.assertListEqual(list(self.surrogate_null_not_strict.subset), [2, 3, 4, 5, 6, 7])
 
     def test_matrix_case(self):
+        """
+        This function tests the matrix case.
+        """
         self.assertEqual(self.surrogate_mat.test_key, "Test subject")
         self.assertListEqual(list(self.surrogate_mat.test_base_sample), [1, 0, 1, 1, 1, 0, 1, 1])
+
+class TestHC(TestCase):
+    """
+    This class tests the HC class.
+    """
+    def setUp(self) -> None:
+        self.num_samples = 3
+        self.pool_size = 40
+        self.num_survived_min = 20
+        self.num_survived_max = 35
+        self.mean = 0
+        self.sigma = 5
+        self.c = 0.05
+        self.delta = 1e-5
+        self.final_time = 1000
+        self.max_step = 0.05
+        self.epsilon = 1e-4
+        self.threshold = 1e-3
+        self.min_growth = 0.9
+        self.max_growth = 1
+        self.symmetric = True
+        self.alpha = None
+        self.method = 'RK45'
+        self.multiprocess = False
+        self.switch_off = False
+
+        # No switch off
+        self.HC_no_switch = HC(self.num_samples, self.pool_size, self.num_survived_min, self.num_survived_max, self.mean,
+                               self.sigma, self.c, self.delta, self.final_time, self.max_step, self.epsilon,
+                               self.threshold, self.min_growth, self.max_growth, self.symmetric, self.alpha, self.method,
+                               self.multiprocess)
+
+        # Switch off
+        self.HC_switch = HC(self.num_samples, self.pool_size, self.num_survived_min, self.num_survived_max, self.mean,
+                               self.sigma, self.c, self.delta, self.final_time, self.max_step, self.epsilon,
+                               self.threshold, self.min_growth, self.max_growth, self.symmetric, self.alpha,
+                               self.method, self.multiprocess)
+
+    def test_num_survived_lst(self):
+        """
+        This function tests the num_survived_lst function.
+        """
+        self.assertEqual(len(self.HC_no_switch.num_survived_list), self.num_samples -
+                         len(self.HC_no_switch.event_not_satisfied_ind) - len([self.HC_no_switch.test_idx]))
+        self.assertEqual(len(self.HC_switch.num_survived_list), self.num_samples -
+                         len(self.HC_switch.event_not_satisfied_ind) - len([self.HC_switch.test_idx]))
+
+    def test_interaction_matrix(self):
+        """
+        This function tests the interaction_matrix function.
+        """
+        self.assertTrue(np.array_equal(np.diag(self.HC_no_switch.A), np.zeros((1, self.pool_size)).squeeze()))
+        self.assertTrue(np.array_equal(np.diag(self.HC_switch.A), np.zeros((1, self.pool_size)).squeeze()))
+
+    def test_set_initial_conditions(self):
+        """
+        This function tests the set_initial_conditions function.
+        """
+        self.assertEqual(self.HC_no_switch.init_cond.shape[0], self.num_samples)
+        self.assertEqual(self.HC_switch.init_cond.shape[0], self.num_samples)
+        self.assertTrue(np.max(self.HC_no_switch.init_cond.astype(bool).sum(axis=1)) < self.num_survived_max)
+        self.assertTrue(np.min(self.HC_no_switch.init_cond.astype(bool).sum(axis=1)) >= self.num_survived_min)
+        self.assertTrue(np.max(self.HC_switch.init_cond.astype(bool).sum(axis=1)) < self.num_survived_max)
+        self.assertTrue(np.min(self.HC_switch.init_cond.astype(bool).sum(axis=1)) >= self.num_survived_min)
+
+    def test_set_symmetric_interaction_matrix(self):
+        """
+        This function tests the set_symmetric_interaction_matrix function.
+        """
+        N = self.HC_no_switch._set_symmetric_interaction_matrix()
+        mat = N.copy()
+        index = np.where(mat != 0)
+        mat[index] = 1
+        self.assertTrue(np.array_equal(mat, mat.T))
+
+    def test_insert_total_pool_others(self):
+        """
+        This function tests the insert_total_pool_others function.
+        """
+        mat = self.HC_switch.new_perturbed_state
+        self.assertAlmostEqual(np.min(mat), self.epsilon, places=5)

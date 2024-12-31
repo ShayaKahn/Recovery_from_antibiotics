@@ -31,7 +31,8 @@ class SimilarityCorrelation:
                 absent in the antibiotic treatment and present in all the post antibiotic samples where t >= timepoints.
                 If False, the returned species are the same except that they are present in time t = timepoints and can
                 be absent in the post antibiotic samples at time t > timepoints except of the last sample in
-                 test_post_ABX_matrix.
+                test_post_ABX_matrix.
+        n_jobs: Integer, the number of jobs to run in parallel.
         """
         (self.ABX, self.baseline, self.post_ABX_matrices, self.baseline_ref, self.method, self.timepoints, self.iters,
          self.new, self.strict, self.keys, self.keys_ref, self.n_jobs) = self._validate_input(ABX, baseline,

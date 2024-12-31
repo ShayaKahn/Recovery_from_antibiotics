@@ -25,6 +25,7 @@ class Glv:
         normalize: boolean, if True the function normalize the output.
         method: method to solve the ODE, default is 'RK45'.
         multiprocess: boolean, if True the function will use dask to parallelize the computation.
+        n_jobs: number of jobs to run in parallel.
         """
 
         (self.smp, self.n, self.delta, self.r, self.s, self.A, self.Y, self.final_time, self.max_step, self.normalize,
@@ -32,9 +33,6 @@ class Glv:
                                                                             interaction_matrix, initial_cond,
                                                                             final_time, max_step, normalize, method,
                                                                             multiprocess, n_jobs)
-        # Initialization
-        self.Final_abundances = np.zeros((self.n, self.smp))
-        self.Final_abundances_single_sample = np.zeros(self.n)
 
     @ staticmethod
     def _validate_input(n_samples, n_species, delta, r, s, interaction_matrix, initial_cond, final_time, max_step,
@@ -99,32 +97,32 @@ class Glv:
 
         event_not_satisfied_ind = []
 
+        final_abundances = np.zeros((self.n, self.smp))
+
         if self.multiprocess:
             solutions = Parallel(n_jobs=self.n_jobs)(delayed(self.solve_for_m)(f_with_params, event_with_params,
                                                                                m) for m in range(self.smp))
 
             for m, sol in enumerate(solutions):
-                self.Final_abundances[:, m] = sol.y[:, -1]
-                zero_ind = np.where(self.Final_abundances[:, m] < 0.0)
-                self.Final_abundances[:, m][zero_ind] = 0.0
+                final_abundances[:, m] = sol.y[:, -1]
+                zero_ind = np.where(final_abundances[:, m] < 0.0)
+                final_abundances[:, m][zero_ind] = 0.0
 
                 if np.size(sol.t_events[0]) == 0:
                     event_not_satisfied_ind.append(m)
         else:
             for m in range(self.smp):
-                print(m)
                 # solve GLV up to time span.
                 sol = solve_ivp(f_with_params, (0, self.final_time), self.Y[m, :], max_step=self.max_step,
                                 events=event_with_params, method=self.method)
 
-                self.Final_abundances[:, m] = sol.y[:, -1]
-                zero_ind = np.where(self.Final_abundances[:, m] < 0.0)
-                self.Final_abundances[:, m][zero_ind] = 0.0
+                final_abundances[:, m] = sol.y[:, -1]
+                zero_ind = np.where(final_abundances[:, m] < 0.0)
+                final_abundances[:, m][zero_ind] = 0.0
 
                 if np.size(sol.t_events[0]) == 0:
                     event_not_satisfied_ind.append(m)
 
-        final_abundances = self.Final_abundances
         if self.normalize:
             return self.normalize_cohort(final_abundances.T), event_not_satisfied_ind
         else:

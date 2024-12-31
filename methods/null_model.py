@@ -1,10 +1,9 @@
 import numpy as np
 from scipy.spatial.distance import braycurtis, jensenshannon
 from methods.similarity import Similarity
-#from skbio.diversity import beta_diversity
+from skbio.diversity import beta_diversity
 from cython_modules.null_model_functions import generate_samples
 import operator
-
 
 class NullModel:
     """
@@ -80,7 +79,6 @@ class NullModel:
             post_cohort = test_post_ABX_matrix
         else:
             post_cohort = self._normalize_cohort(test_post_ABX_matrix)
-
         return base, abx, base_cohort, post_cohort
 
     def _validate_input_variables(self, num_reals, timepoints, strict):
@@ -138,8 +136,7 @@ class NullModel:
         mask = np.isin(pool_indices, self.subset)
         pool_indices = pool_indices[mask]
         pool = pool[mask]
-        print(pool_indices)
-        synthetic_samples = generate_samples(pool.astype(np.float64), pool_indices.astype(np.int64), stop, self.num_reals,
+        synthetic_samples = generate_samples(pool, pool_indices, stop, self.num_reals,
                                              np.size(self.test_post_ABX_sample))
         # Normalize the synthetic_samples.
         synthetic_samples = self._normalize_cohort(synthetic_samples)
@@ -289,97 +286,97 @@ class NullModel:
         elif method == "Weighted unifrac":
             dist_real, dist_synthetic = self._unifrac(method, otu_ids, tree)
             return dist_real, dist_synthetic
-        #elif method == "Unweighted unifrac":
-        #    dist_real, dist_synthetic = self._unifrac(method, otu_ids, tree)
-        #    return dist_real, dist_synthetic
+        elif method == "Unweighted unifrac":
+            dist_real, dist_synthetic = self._unifrac(method, otu_ids, tree)
+            return dist_real, dist_synthetic
         elif method == "Specificity":
             return self._specificity()
         elif method == "Recovery":
             return self._recovery()
 
-    #def _construct_filtered_data(self, first_sample, second_sample):
-    #    """
-    #    Inputs:
-    #    first_sample: numpy array of shape (# species,).
-    #    second_sample: numpy array of shape (# species,)
-    #    Return:
-    #    filtered_data: normalized numpy matrix of shape (2, # species). Where the ARS species are removed.
-    #    """
-    #    data = np.vstack([first_sample, second_sample])
-    #    filtered_data = self._normalize_cohort(data[:, self.subset].squeeze())
-    #    return filtered_data
+    def _construct_filtered_data(self, first_sample, second_sample):
+        """
+        Inputs:
+        first_sample: numpy array of shape (# species,).
+        second_sample: numpy array of shape (# species,)
+        Return:
+        filtered_data: normalized numpy matrix of shape (2, # species). Where the ARS species are removed.
+        """
+        data = np.vstack([first_sample, second_sample])
+        filtered_data = self._normalize_cohort(data[:, self.subset].squeeze())
+        return filtered_data
 
-    #def _construct_pruned_tree(self, otu_ids, tree):
-    #    """
-    #   Inputs:
-    #    otu_ids: List that represent the OTU identifiers.
-    #    tree: The phylogenetic tree that corresponds to the OTU identifiers.
-    #    Return:
-    #    pruned_tree: The pruned tree that contains only the non-ARS species.
-    #    """
-    #    remove_otu_ids = [otu_ids[i] for i in range(len(otu_ids)) if i in self.subset_comp]
-    #    pruned_tree = tree.copy()
-    #    for node in remove_otu_ids:
-    #        to_delete = pruned_tree.find(node)
-    #        pruned_tree.remove_deleted(lambda x: x == to_delete)
-    #        pruned_tree.prune()
-    #    return pruned_tree
+    def _construct_pruned_tree(self, otu_ids, tree):
+        """
+        Inputs:
+        otu_ids: List that represent the OTU identifiers.
+        tree: The phylogenetic tree that corresponds to the OTU identifiers.
+        Returns:
+        pruned_tree: The pruned tree that contains only the non-ARS species.
+        """
+        remove_otu_ids = [otu_ids[i] for i in range(len(otu_ids)) if i in self.subset_comp]
+        pruned_tree = tree.copy()
+        for node in remove_otu_ids:
+            to_delete = pruned_tree.find(node)
+            pruned_tree.remove_deleted(lambda x: x == to_delete)
+            pruned_tree.prune()
+        return pruned_tree
 
-    #def _filter_otu_ids(self, otu_ids):
-    #    """
-    #    Inputs:
-    #    otu_ids: List that represent the OTU identifiers.
-    #    Return:
-    #    filtered_otu_ids: List that contains only the non-ARS species.
-    #    """
-    #    return [otu_ids[i] for i in range(len(otu_ids)) if i in self.subset]
+    def _filter_otu_ids(self, otu_ids):
+        """
+        Inputs:
+        otu_ids: List that represent the OTU identifiers.
+        Return:
+        filtered_otu_ids: List that contains only the non-ARS species.
+        """
+        return [otu_ids[i] for i in range(len(otu_ids)) if i in self.subset]
 
-    #@staticmethod
-    #def _create_sample_ids(data):
-    #    """
-    #    Inputs:
-    #    data: numpy matrix of shape (2, # species).
-    #    Return:
-    #    sample_ids: List that contains the sample identifiers (the indexes of the samples).
-    #    """
-    #    return np.arange(0, data.shape[0], 1).tolist()
+    @staticmethod
+    def _create_sample_ids(data):
+        """
+        Inputs:
+        data: numpy matrix of shape (2, # species).
+        Return:
+        sample_ids: List that contains the sample identifiers (the indexes of the samples).
+        """
+        return np.arange(0, data.shape[0], 1).tolist()
 
-    #def _unifrac(self, method, otu_ids=None, tree=None):
-    #    """
-    #    Inputs:
-    #    method: distance method, either "Weighted unifrac" or "Unweighted unifrac".
-    #    otu_ids: list that represent the OTU identifiers.
-    #    tree: phylogenetic tree that corresponds to the OTU identifiers.
-    #    :return:
-    #    dist_real: distance between the test sample and the baseline sample.
-    #    dist_shuffled: distances between the shuffled samples and the baseline sample.
-    #    """
-    #    # Filter the ARS species.
-    #    filtered_data = self._construct_filtered_data(self.test_base_sample, self.test_post_ABX_sample)
-    #    sample_ids = self._create_sample_ids(filtered_data)
-    #    filtered_otu_ids = self._filter_otu_ids(otu_ids)
-    #    pruned_tree = self._construct_pruned_tree(otu_ids, tree)
-    #    # Calculate the distance for different measures.
-    #    if method == "Weighted unifrac":
-    #        dist_real = beta_diversity(metric='weighted_unifrac', counts=filtered_data,
-    #                                   ids=sample_ids, taxa=filtered_otu_ids, tree=pruned_tree, validate=False)[1, 0]
-    #        dist_synthetic = []
-    #        for smp in self.synthetic_samples:
-    #            filtered_data = self._construct_filtered_data(self.test_base_sample, smp)
-    #            dist_synthetic.append(beta_diversity(metric='weighted_unifrac', counts=filtered_data,
-    #                                                ids=sample_ids, taxa=filtered_otu_ids, tree=pruned_tree,
-    #                                                validate=False)[1, 0])
-    #        return dist_real, dist_synthetic
-    #    elif method == "Unweighted unifrac":
-    #        dist_real = beta_diversity(metric='unweighted_unifrac', counts=filtered_data,
-    #                                   ids=sample_ids, taxa=filtered_otu_ids, tree=pruned_tree, validate=False)[1, 0]
-    #        dist_synthetic = []
-    #        for smp in self.synthetic_samples:
-    #            filtered_data = self._construct_filtered_data(self.test_base_sample, smp)
-    #            dist_synthetic.append(beta_diversity(metric='unweighted_unifrac', counts=filtered_data,
-    #                                                ids=sample_ids, taxa=filtered_otu_ids, tree=pruned_tree,
-    #                                                validate=False)[1, 0])
-    #        return dist_real, dist_synthetic
+    def _unifrac(self, method, otu_ids=None, tree=None):
+        """
+        Inputs:
+        method: distance method, either "Weighted unifrac" or "Unweighted unifrac".
+        otu_ids: list that represent the OTU identifiers.
+        tree: phylogenetic tree that corresponds to the OTU identifiers.
+        :return:
+        dist_real: distance between the test sample and the baseline sample.
+        dist_shuffled: distances between the shuffled samples and the baseline sample.
+        """
+        # Filter the ARS species.
+        filtered_data = self._construct_filtered_data(self.test_base_sample, self.test_post_ABX_sample)
+        sample_ids = self._create_sample_ids(filtered_data)
+        filtered_otu_ids = self._filter_otu_ids(otu_ids)
+        pruned_tree = self._construct_pruned_tree(otu_ids, tree)
+        # Calculate the distance for different measures.
+        if method == "Weighted unifrac":
+            dist_real = beta_diversity(metric='weighted_unifrac', counts=filtered_data,
+                                       ids=sample_ids, taxa=filtered_otu_ids, tree=pruned_tree, validate=False)[1, 0]
+            dist_synthetic = []
+            for smp in self.synthetic_samples:
+                filtered_data = self._construct_filtered_data(self.test_base_sample, smp)
+                dist_synthetic.append(beta_diversity(metric='weighted_unifrac', counts=filtered_data,
+                                                    ids=sample_ids, taxa=filtered_otu_ids, tree=pruned_tree,
+                                                    validate=False)[1, 0])
+            return dist_real, dist_synthetic
+        elif method == "Unweighted unifrac":
+            dist_real = beta_diversity(metric='unweighted_unifrac', counts=filtered_data,
+                                       ids=sample_ids, taxa=filtered_otu_ids, tree=pruned_tree, validate=False)[1, 0]
+            dist_synthetic = []
+            for smp in self.synthetic_samples:
+                filtered_data = self._construct_filtered_data(self.test_base_sample, smp)
+                dist_synthetic.append(beta_diversity(metric='unweighted_unifrac', counts=filtered_data,
+                                                    ids=sample_ids, taxa=filtered_otu_ids, tree=pruned_tree,
+                                                    validate=False)[1, 0])
+            return dist_real, dist_synthetic
 
     def _returned_species(self):
         """

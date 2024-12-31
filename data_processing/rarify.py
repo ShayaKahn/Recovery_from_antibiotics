@@ -47,7 +47,7 @@ class Rarify:
                      the values are the counts (integers)
         """
         # filter out samples with lower frequancy then the depth
-        df_filtered = OTU_table.loc[:, (OTU_table.sum(axis=0) > depth)]
+        df_filtered = OTU_table.loc[:, (OTU_table.sum(axis=0) >= depth)]
         return df_filtered
 
     def _construct_sampling_dict(self):

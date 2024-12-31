@@ -1,5 +1,5 @@
 import numpy as np
-#from skbio.diversity import beta_diversity
+from skbio.diversity import beta_diversity
 
 class Similarity:
     """
@@ -287,32 +287,32 @@ class Similarity:
             jaccard_w_sym = min_sum / max_sum
             return jaccard_w_sym
 
-    #def _unweighted_unifrac(self, tree, otu_ids):
-    #    """
-    #    This method calculates the Unweighted Unifrac similarity between the first sample and the matrix.
-    #    Inputs:
-    #    tree: phylogenetic tree object.
-    #    otu_ids: list of OTU ids.
-    #    Returns:
-    #    if the matrix is 1D: Unweighted Unifrac similarity value.
-    #   if the matrix is 2D: numpy array that contain the Unweighted Unifrac similarity values.
-    #    """
-    #    if self.matrix.ndim == 1:
-    #        # calculate the Unweighted Unifrac similarity
-    #        data = np.vstack([self.sample_first, self.matrix])
-    #        sample_ids = np.arange(0, data.shape[0], 1).tolist()
-    #        uu = 1 - beta_diversity(metric='unweighted_unifrac', counts=data, ids=sample_ids, taxa=otu_ids,
-    #                                tree=tree, validate=False)[1, 0]
-    #        return uu
-    #    elif self.matrix.ndim == 2:
-    #        # calculate the Unweighted Unifrac similarity
-    #        uu = []
-    #        for smp in self.matrix:
-    #            data = np.vstack([self.sample_first, smp])
-    #            sample_ids = np.arange(0, data.shape[0], 1).tolist()
-    #            uu.append(1 - beta_diversity(metric='unweighted_unifrac', counts=data, ids=sample_ids, taxa=otu_ids,
-    #                                         tree=tree, validate=False)[1, 0])
-    #        return np.array(uu)
+    def _unweighted_unifrac(self, tree, otu_ids):
+        """
+        This method calculates the Unweighted Unifrac similarity between the first sample and the matrix.
+        Inputs:
+        tree: phylogenetic tree object.
+        otu_ids: list of OTU ids.
+        Returns:
+        if the matrix is 1D: Unweighted Unifrac similarity value.
+        if the matrix is 2D: numpy array that contain the Unweighted Unifrac similarity values.
+        """
+        if self.matrix.ndim == 1:
+            # calculate the Unweighted Unifrac similarity
+            data = np.vstack([self.sample_first, self.matrix])
+            sample_ids = np.arange(0, data.shape[0], 1).tolist()
+            uu = 1 - beta_diversity(metric='unweighted_unifrac', counts=data, ids=sample_ids, taxa=otu_ids,
+                                    tree=tree, validate=False)[1, 0]
+            return uu
+        elif self.matrix.ndim == 2:
+            # calculate the Unweighted Unifrac similarity
+            uu = []
+            for smp in self.matrix:
+                data = np.vstack([self.sample_first, smp])
+                sample_ids = np.arange(0, data.shape[0], 1).tolist()
+                uu.append(1 - beta_diversity(metric='unweighted_unifrac', counts=data, ids=sample_ids, taxa=otu_ids,
+                                             tree=tree, validate=False)[1, 0])
+            return np.array(uu)
     def calculate_similarity(self, tree=None, otu_ids=None):
         """
         This method calculates the similarity between the first sample and the matrix.
@@ -340,5 +340,5 @@ class Similarity:
             return self._weighted_jaccard()
         elif self.method == "Weighted Jaccard symmetric":
             return self._weighted_jaccard_symmetric()
-        #elif self.method == "Unweighted Unifrac":
-        #    return self._unweighted_unifrac(tree, otu_ids)
+        elif self.method == "Unweighted Unifrac":
+            return self._unweighted_unifrac(tree, otu_ids)

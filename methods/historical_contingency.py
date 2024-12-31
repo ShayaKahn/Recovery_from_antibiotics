@@ -128,16 +128,38 @@ class HC:
                 switch_off)
 
     def _create_num_survived_list(self):
+        """
+        This function creates a list of the number of survived species for each sample.
+        Returns:
+        A list of the number of survived species for each sample.
+        """
         return np.random.randint(self.num_survived_min, self.num_survived_max, self.num_samples)
 
     def _set_growth_rate(self):
+        """
+        This function sets the growth rate for each specie.
+        Returns:
+        Numpy array of the growth rate for each specie.
+        """
         return np.random.uniform(self.min_growth, self.max_growth, self.pool_size)
 
     def _set_logistic_growth(self):
+        """
+        This function sets the logistic growth for each specie.
+        Returns:
+        Numpy array of the logistic growth for each specie.
+        """
         return np.ones(self.pool_size)
 
     def _set_initial_conditions(self):
+        """
+        This function sets the initial conditions for the GLV model.
+        Returns:
+        Numpy matrix that contains the initial conditions for the GLV model.
+        """
+        # initialize the initial conditions
         y0 = np.zeros((self.num_samples, self.pool_size))
+        # create the initial conditions matrix
         survived_matrix = [random.sample(range(0, self.pool_size),
                                          self.num_survived_list[i]) for i in range(self.num_samples)]
         for index, (y, s) in enumerate(zip(y0, survived_matrix)):
@@ -145,50 +167,94 @@ class HC:
         return y0
 
     def _set_interaction_matrix(self):
+        """
+        This function sets the interaction matrix.
+        Returns:
+        Numpy matrix that represent the interaction matrix.
+        """
+        # create the interaction matrix
         interaction_matrix = np.zeros((self.pool_size, self.pool_size))
+        # generate the random numbers using the normal distribution
         random_numbers = np.random.normal(self.mean, self.sigma, size=(self.pool_size, self.pool_size))
+        # create the mask base on the Connectance value
         mask = np.random.rand(self.pool_size, self.pool_size) < self.c
+        # set the values of the interaction matrix
         interaction_matrix[mask] = random_numbers[mask]
+        # set the diagonal to zero
         np.fill_diagonal(interaction_matrix, 0)
         return -np.abs(interaction_matrix)
 
     def _set_symmetric_interaction_matrix(self):
+        """
+        This function sets the symmetric interaction matrix.
+        Returns:
+        Numpy matrix that represent the symmetric interaction matrix.
+        """
+        # create the random graph
         G = nx.binomial_graph(self.pool_size, self.c)
+        # create the mask
         mask = nx.to_numpy_array(G).astype(bool)
+        # generate the random numbers using the normal distribution
         random_numbers = np.random.normal(self.mean, self.sigma, size=(self.pool_size, self.pool_size))
+        # initialize the interaction matrix
         interaction_matrix = np.zeros((self.pool_size, self.pool_size))
+        # set the values of the interaction matrix
         interaction_matrix[mask] = random_numbers[mask]
+        # set the diagonal to zero
         np.fill_diagonal(interaction_matrix, 0)
         return -np.abs(interaction_matrix)
 
     def _create_full_interaction_matrix(self):
+        """
+        This function creates the full interaction matrix.
+        Returns:
+        Numpy matrix that represent the full interaction matrix.
+        """
         if self.symmetric:
             N = self._set_symmetric_interaction_matrix()
         else:
             N = self._set_interaction_matrix()
+        # create the strength matrix
         H = self._set_int_strength_matrix()
+        # create the full interaction matrix
         A = np.dot(N, H)
         return A
 
     def _generate_post_perturbed_state(self):
+        """
+        This function generates the post perturbed state.
+        Returns:
+        post_perturbed_state: Numpy matrix that represent the post perturbed state.
+        event_not_satisfied_ind_post: The indices of the samples that the steady state condition is not satisfied.
+        """
         if self.switch_off:
+            # switch off the effect of the perturbed species on the new inserted species and vice versa
             perturbed_species = self.perturbed_state[self.test_idx, :] != 0
             A_copy = self.A.copy()
             A_switch = self._switch_off_interactions(A_copy, perturbed_species)
+            # apply the GLV model
             post_perturbed_state, event_not_satisfied_ind_post = self._apply_GLV(self.new_perturbed_state[None, :],
                                                                                  norm=True,
                                                                                  int_mat=A_switch,
                                                                                  n_samples=1)
         else:
+            # apply the GLV model
             post_perturbed_state, event_not_satisfied_ind_post = self._apply_GLV(self.new_perturbed_state[None, :],
                                                                                  norm=True, int_mat=self.A,
                                                                                  n_samples=1)
         return post_perturbed_state, event_not_satisfied_ind_post
 
     def _set_int_strength_matrix(self):
+        """
+        This function sets the interaction strength matrix.
+        Returns:
+        Numpy matrix that represent the interaction strength matrix.
+        """
         if self.alpha is None:
+            # The case of equal interaction strength
             return np.diag(np.ones(self.pool_size))
         else:
+            # The case of power-law distribution of the interaction strength
             diag = powerlaw.rvs(self.alpha, size=self.pool_size)
             mean = np.mean(diag)
             normalized_diag = diag / mean
@@ -196,6 +262,15 @@ class HC:
 
     @staticmethod
     def _switch_off_interactions(A, perturbed_species):
+        """
+        This function switches off the effect of the perturbed species on the new inserted species and vice versa.
+        Inputs:
+        A: numpy matrix of shape (# species, # species) that represents the interaction matrix.
+        perturbed_species: the indexes of the perturbed species.
+        Returns:
+        A_copy: numpy matrix of shape (# species, # species) that represents the interaction matrix with the effect of
+                the perturbed species on the new inserted species and vice versa switched off.
+        """
         A_copy = A.copy()
         perturbed_species_c = np.setdiff1d(np.arange(A.shape[0]), perturbed_species)
         A_copy[np.ix_(perturbed_species_c, perturbed_species)] = 0
@@ -203,6 +278,15 @@ class HC:
         return A_copy
 
     def _apply_GLV(self, init_cond, norm, int_mat, n_samples):
+        """
+        This function applies the GLV model.
+        init_cond: The initial conditions for the GLV model.
+        norm: If True, the function will normalize the output.
+        int_mat: the interaction matrix.
+        n_samples: The number of samples.
+        Returns:
+        final_abundances: Numpy matrix that represents the final abundances.
+        """
         glv_object = Glv(n_samples, self.pool_size, self.delta, self.r, self.s, int_mat, init_cond,
                          self.final_time, self.max_step, normalize=norm, method=self.method,
                          multiprocess=self.multiprocess)
@@ -210,24 +294,43 @@ class HC:
         return final_abundances
 
     def _insert_total_pool(self):
+        """
+        This function inserts the total pool to the perturbed state.
+        Returns:
+        new_perturbed_state: Numpy matrix that represents the new perturbed state.
+        """
         new_perturbed_state = self.perturbed_state[self.test_idx, :].copy()
         mask = np.ones(self.pool_size, dtype=bool)
         idx = np.where(new_perturbed_state != 0)
         mask[idx] = False
+        # insert the total pool with amount epsilon
         new_perturbed_state[mask] = self.epsilon
         return new_perturbed_state
 
     def _insert_total_pool_others(self):
+        """
+        This function inserts the total pool to the other samples (not the tested sample).
+        Returns:
+        new_perturbed_state_others: Numpy matrix that represents the new perturbed state for the other samples.
+        """
         new_perturbed_state = self.perturbed_state.copy()
         new_perturbed_state = np.delete(new_perturbed_state, self.test_idx, axis=0)
         for p in new_perturbed_state:
             s = np.where(p != 0)
             mask = np.ones(p.shape[0], dtype=bool)
             mask[s] = False
+            # insert the total pool with amount epsilon
             p[mask] = self.epsilon
         return new_perturbed_state
 
     def _remove_low_abundances(self, post):
+        """
+        This function removes the low abundances.
+        Inputs:
+        post: Numpy matrix that represents the post perturbed state.
+        Returns:
+        post_copy: Numpy matrix that represents the post perturbed state after removing the low abundances.
+        """
         post_copy = post.copy()
         zero_ind = np.where(post_copy < self.threshold)
         post_copy[zero_ind] = 0.0
@@ -243,6 +346,11 @@ class HC:
         return cohort_normalized
 
     def get_results(self):
+        """
+        This function returns the results.
+        Returns:
+        results: Dictionary that contains the results.
+        """
         results = {
             "perturbed_state": self.perturbed_state,
             "filtered_post_perturbed_state": self.filtered_post_perturbed_state.squeeze(),
