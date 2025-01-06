@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 from cython_modules.glv_functions import f, event
-from dask import delayed
 from joblib import Parallel, delayed
 
 class Glv:
@@ -74,8 +73,8 @@ class Glv:
         if not (isinstance(multiprocess, bool)):
             raise ValueError("multiprocess must be of type bool.")
 
-        if not (isinstance(n_jobs, int)):
-            raise ValueError("n_jobs must be of type int.")
+        if not (isinstance(n_jobs, int) or n_jobs is None):
+            raise ValueError("n_jobs must be of type int or None.")
 
         return (n_samples, n_species, delta, r, s, interaction_matrix, initial_cond, final_time, max_step, normalize,
                 method, multiprocess, n_jobs)

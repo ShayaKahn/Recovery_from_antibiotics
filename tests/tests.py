@@ -365,18 +365,18 @@ class TestHC(TestCase):
     This class tests the HC class.
     """
     def setUp(self) -> None:
-        self.num_samples = 3
-        self.pool_size = 40
-        self.num_survived_min = 20
-        self.num_survived_max = 35
+        self.num_samples = 20
+        self.pool_size = 50
+        self.num_survived_min = 25
+        self.num_survived_max = 25
         self.mean = 0
-        self.sigma = 5
+        self.sigma = 15
         self.c = 0.05
         self.delta = 1e-5
         self.final_time = 1000
         self.max_step = 0.05
         self.epsilon = 1e-4
-        self.threshold = 1e-3
+        self.phi = 1e-4
         self.min_growth = 0.9
         self.max_growth = 1
         self.symmetric = True
@@ -388,14 +388,14 @@ class TestHC(TestCase):
         # No switch off
         self.HC_no_switch = HC(self.num_samples, self.pool_size, self.num_survived_min, self.num_survived_max, self.mean,
                                self.sigma, self.c, self.delta, self.final_time, self.max_step, self.epsilon,
-                               self.threshold, self.min_growth, self.max_growth, self.symmetric, self.alpha, self.method,
+                               self.phi, self.min_growth, self.max_growth, self.symmetric, self.alpha, self.method,
                                self.multiprocess)
 
         # Switch off
         self.HC_switch = HC(self.num_samples, self.pool_size, self.num_survived_min, self.num_survived_max, self.mean,
-                               self.sigma, self.c, self.delta, self.final_time, self.max_step, self.epsilon,
-                               self.threshold, self.min_growth, self.max_growth, self.symmetric, self.alpha,
-                               self.method, self.multiprocess)
+                            self.sigma, self.c, self.delta, self.final_time, self.max_step, self.epsilon,
+                            self.phi, self.min_growth, self.max_growth, self.symmetric, self.alpha, self.method,
+                            self.multiprocess, switch_off=True)
 
     def test_num_survived_lst(self):
         """
@@ -417,12 +417,12 @@ class TestHC(TestCase):
         """
         This function tests the set_initial_conditions function.
         """
-        self.assertEqual(self.HC_no_switch.init_cond.shape[0], self.num_samples)
-        self.assertEqual(self.HC_switch.init_cond.shape[0], self.num_samples)
-        self.assertTrue(np.max(self.HC_no_switch.init_cond.astype(bool).sum(axis=1)) < self.num_survived_max)
-        self.assertTrue(np.min(self.HC_no_switch.init_cond.astype(bool).sum(axis=1)) >= self.num_survived_min)
-        self.assertTrue(np.max(self.HC_switch.init_cond.astype(bool).sum(axis=1)) < self.num_survived_max)
-        self.assertTrue(np.min(self.HC_switch.init_cond.astype(bool).sum(axis=1)) >= self.num_survived_min)
+        self.assertEqual(self.HC_no_switch.Y_0.shape[0], self.num_samples)
+        self.assertEqual(self.HC_switch.Y_0.shape[0], self.num_samples)
+        self.assertTrue(np.max(self.HC_no_switch.Y_0.astype(bool).sum(axis=1)) <= self.num_survived_max)
+        self.assertTrue(np.min(self.HC_no_switch.Y_0.astype(bool).sum(axis=1)) >= self.num_survived_min)
+        self.assertTrue(np.max(self.HC_switch.Y_0.astype(bool).sum(axis=1)) <= self.num_survived_max)
+        self.assertTrue(np.min(self.HC_switch.Y_0.astype(bool).sum(axis=1)) >= self.num_survived_min)
 
     def test_set_symmetric_interaction_matrix(self):
         """
@@ -438,5 +438,19 @@ class TestHC(TestCase):
         """
         This function tests the insert_total_pool_others function.
         """
-        mat = self.HC_switch.new_perturbed_state
+        mat = self.HC_switch.y
         self.assertAlmostEqual(np.min(mat), self.epsilon, places=5)
+
+    def test_consistency(self):
+        """
+        This function tests the consistency between dimensions.
+        """
+        event_not_satisfied_ind = self.HC_no_switch.event_not_satisfied_ind
+        print(event_not_satisfied_ind)
+        event_not_satisfied_ind_Y_s = self.HC_no_switch.event_not_satisfied_ind_Y_s
+        print(event_not_satisfied_ind_Y_s)
+        results = self.HC_no_switch.get_results()
+        Y_s = results["Y_s"]
+        print(Y_s.shape[0])
+        self.assertEqual(Y_s.shape[0],
+                         self.num_samples - len(event_not_satisfied_ind) - len(event_not_satisfied_ind_Y_s) - 1)
