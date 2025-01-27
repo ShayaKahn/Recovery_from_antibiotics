@@ -4,28 +4,27 @@ from cython_modules.glv_functions import f, event
 from joblib import Parallel, delayed
 
 class Glv:
-    """
-    This class is responsible to solve the GLV model with verification of reaching the steady state
-    for a given parameters.
-    """
+
+    # This class is responsible to solve the GLV model with verification of reaching the steady state
+    # for a given parameters.
+
     def __init__(self, n_samples, n_species, delta, r, s, interaction_matrix, initial_cond, final_time, max_step,
                  normalize=True, method='RK45', multiprocess=True, n_jobs=4):
-        """
-        Inputs:
-        n_samples: The number of samples you are need to compute.
-        n_species: The number of species at each sample.
-        delta: This parameter is responsible for the stop condition at the steady state.
-        r: growth rate vector of shape (n_species,).
-        s: logistic growth term vector of size (n_species,).
-        interaction_matrix: interaction matrix of shape (n_species, n_species).
-        initial_cond: set of initial conditions for each sample, the shape is (n_samples, n_species)
-        final_time: the final time of the integration.
-        max_step: maximal allowed step size.
-        normalize: boolean, if True the function normalize the output.
-        method: method to solve the ODE, default is 'RK45'.
-        multiprocess: boolean, if True the function will use dask to parallelize the computation.
-        n_jobs: number of jobs to run in parallel.
-        """
+
+        # Inputs:
+        # n_samples: The number of samples you are need to compute.
+        # n_species: The number of species at each sample.
+        # delta: This parameter is responsible for the stop condition at the steady state.
+        # r: growth rate vector of shape (n_species,).
+        # s: logistic growth term vector of size (n_species,).
+        # interaction_matrix: interaction matrix of shape (n_species, n_species).
+        # initial_cond: set of initial conditions for each sample, the shape is (n_samples, n_species)
+        # final_time: the final time of the integration.
+        # max_step: maximal allowed step size.
+        # normalize: boolean, if True the function normalize the output.
+        # method: method to solve the ODE, default is 'RK45'.
+        # multiprocess: boolean, if True the function will use dask to parallelize the computation.
+        # n_jobs: number of jobs to run in parallel.
 
         (self.smp, self.n, self.delta, self.r, self.s, self.A, self.Y, self.final_time, self.max_step, self.normalize,
          self.method, self.multiprocess, self.n_jobs) = Glv._validate_input(n_samples, n_species, delta, r, s,
@@ -80,12 +79,11 @@ class Glv:
                 method, multiprocess, n_jobs)
 
     def solve(self):
-        """
-        This function updates the final abundances, rows are the species and columns represent the samples.
-        Returns:
-        final_abundances: the final abundances of the samples.
-        event_not_satisfied_ind: the indexes of the samples that did not reach the steady state.
-        """
+        # This function updates the final abundances, rows are the species and columns represent the samples.
+        # Returns:
+        # final_abundances: the final abundances of the samples.
+        # event_not_satisfied_ind: the indexes of the samples that did not reach the steady state.
+
         # Set the parameters to the functions f and event.
         f_with_params = lambda t, x: f(t, x, self.r, self.s, self.A, self.delta)
         event_with_params = lambda t, x: event(t, x, self.r, self.s, self.A, self.delta)
@@ -128,14 +126,14 @@ class Glv:
             return final_abundances.T, event_not_satisfied_ind
 
     def solve_for_m(self, f_with_params, event_with_params,  m):
-        """
-        This function solves the GLV model for a given sample.
-        f_with_params: the function f with the parameters.
-        event_with_params: the event function with the parameters.
-        m: the sample index.
-        Returns:
-        sol: the solution of the GLV model for the given sample.
-        """
+
+        # This function solves the GLV model for a given sample.
+        # f_with_params: the function f with the parameters.
+        # event_with_params: the event function with the parameters.
+        # m: the sample index.
+        # Returns:
+        # sol: the solution of the GLV model for the given sample.
+
         sol = solve_ivp(f_with_params, (0, self.final_time), self.Y[m, :], max_step=self.max_step,
                         events=event_with_params, method=self.method)
         return sol

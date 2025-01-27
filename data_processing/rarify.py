@@ -2,17 +2,16 @@ import pandas as pd
 import numpy as np
 
 class Rarify:
-    """
-    This class rarifies an OTU table to a desired sequencing depth.
-    """
+
+    # This class rarifies an OTU table to a desired sequencing depth.
+
     def __init__(self, df, depth=None):
-        """
-        Inputs:
-        df: dataframe, represents OTU table with samples as columns and OTUs as rows,
-            the values are the counts (integers)
-        depth: int, the number of reads to be sampled from each sample, if None,
-               the minimum number of reads is the default. The number of reads to be sampled from each sample
-        """
+        # Inputs:
+        # df: dataframe, represents OTU table with samples as columns and OTUs as rows,
+        #     the values are the counts (integers)
+        # depth: int, the number of reads to be sampled from each sample, if None,
+        #        the minimum number of reads is the default. The number of reads to be sampled from each sample
+
         self.df, self.depth = self._validate_input(df, depth)
         self.sampling_dict = self._construct_sampling_dict()
 
@@ -38,25 +37,23 @@ class Rarify:
 
     @staticmethod
     def _filter_low_frequancy(OTU_table, depth):
-        """
-        Filter out samples with lower frequancy then the depth.
-        Inputs:
-        As described in the __init__ method.
-        Return:
-        df_filtered: dataframe, represents OTU table with samples as columns and OTUs as rows,
-                     the values are the counts (integers)
-        """
+        # Filter out samples with lower frequancy then the depth.
+        # Inputs:
+        # As described in the __init__ method.
+        # Return:
+        # df_filtered: dataframe, represents OTU table with samples as columns and OTUs as rows,
+        #              the values are the counts (integers)
+
         # filter out samples with lower frequancy then the depth
         df_filtered = OTU_table.loc[:, (OTU_table.sum(axis=0) >= depth)]
         return df_filtered
 
     def _construct_sampling_dict(self):
-        """
-        Construct a sampling dictionary.
-        Return:
-        sampling_dict: dictionary, keys are the sample names and values are the indices of the OTUs in the OTU table
-        repeated the number of times they are present in the sample.
-        """
+        # Construct a sampling dictionary.
+        # Return:
+        # sampling_dict: dictionary, keys are the sample names and values are the indices of the OTUs in the OTU table
+        # repeated the number of times they are present in the sample.
+
         # construct a sampling dictionary
         sampling_dict = {
             col: np.repeat(self.df.index, self.df[col]).tolist()
@@ -65,12 +62,11 @@ class Rarify:
         return sampling_dict
 
     def rarify(self):
-        """
-        Rarify the OTU table to the desired depth.
-        Return:
-        rar_df: dataframe, represents the rarified OTU table with samples as columns and OTUs as rows,
-                the values are the counts (integers)
-        """
+        # Rarify the OTU table to the desired depth.
+        # Return:
+        # rar_df: dataframe, represents the rarified OTU table with samples as columns and OTUs as rows,
+        #         the values are the counts (integers)
+
         # rarify the dataframe
         rar_df = pd.DataFrame(0, index=self.df.index, columns=self.df.columns)
 

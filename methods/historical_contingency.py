@@ -5,50 +5,47 @@ import networkx as nx
 from scipy.stats import powerlaw
 
 class HC:
-    """
-    This class is responsible for the simulation of the historical contingency model.
-    I will write some notations to make the variables names more clear:
-    A: represents the interaction matrix in the GLV model.
-    s: represents the logistic growth vector in the GLV model.
-    r: represents the growth rate vector in the GLV model.
-    Y_0: represents the initial conditions matrix in the GLV model, where rows are samples and columns are species.
-    Y_p: represents the perturbed state in the GLV model. Each sample has a specific number of present species.
-    y: represents the test sample in the perturbed state. I choose the first sample that satisfies the steady state
-       condition.
-    epsilon: represents the value to insert to the non-survived species. This value should be small and represent
-             the effective amount of exposure of the system to the new species.
-    eta: represents the threshold to remove low abundances. This value should be small and represent the minimal
-         abundance that the species should have to be considered as present.
-    y_s: represents the post perturbed state for the test sample. The steady state after inserting the total pool.
-    Y_s: represents the post perturbed state for the other samples. The steady state after inserting the total pool.
-    """
+    # This class is responsible for the simulation of the historical contingency model.
+    # I will write some notations to make the variables names more clear:
+    # A: represents the interaction matrix in the GLV model.
+    # s: represents the logistic growth vector in the GLV model.
+    # r: represents the growth rate vector in the GLV model.
+    # Y_0: represents the initial conditions matrix in the GLV model, where rows are samples and columns are species.
+    # Y_p: represents the perturbed state in the GLV model. Each sample has a specific number of present species.
+    # y: represents the test sample in the perturbed state. I choose the first sample that satisfies the steady state
+    #    condition.
+    # epsilon: represents the value to insert to the non-survived species. This value should be small and represent
+    #         the effective amount of exposure of the system to the new species.
+    # eta: represents the threshold to remove low abundances. This value should be small and represent the minimal
+    #     abundance that the species should have to be considered as present.
+    # y_s: represents the post perturbed state for the test sample. The steady state after inserting the total pool.
+    # Y_s: represents the post perturbed state for the other samples. The steady state after inserting the total pool.
     def __init__(self, num_samples, pool_size, num_survived_min, num_survived_max, mean, sigma, c, delta, final_time,
                  max_step, epsilon, eta, min_growth, max_growth, symmetric=True, alpha=None, method='RK45',
                  multiprocess=True, switch_off=False, n_jobs=4):
-        """
-        Inputs:
-        num_samples: The number of samples.
-        pool_size: The total size of the population.
-        num_survived_min: The minimal number of survived species.
-        num_survived_max: The maximal number of survived species.
-        mean: For the interaction matrix generation, the mean of the normal distribution.
-        sigma: For the interaction matrix generation, The standard deviation of the normal distribution.
-        c: The Connectance.
-        delta: The stop condition for the steady state.
-        final_time: The final time of the integration.
-        max_step: The maximal allowed step size.
-        epsilon: The value to insert to the non-survived species.
-        eta: The threshold to remove low abundances.
-        max_growth: The maximum growth rate.
-        min_growth: The minimum growth rate.
-        symmetric: If True, the interaction matrix will be symmetric.
-        alpha: The power-law exponent for the interaction matrix strength.
-        method: The method to solve the GLV model.
-        multiprocess: If True, the class will use the multiprocessing module.
-        switch_off: If True, the effect of the perturbed state species on the new inserted species is switched off and
-                    also, the effect of the new species on the perturbed species is also switched off.
-        n_jobs: The number of jobs to run in parallel.
-        """
+        # Inputs:
+        # num_samples: The number of samples.
+        # pool_size: The total size of the population.
+        # num_survived_min: The minimal number of survived species.
+        # num_survived_max: The maximal number of survived species.
+        # mean: For the interaction matrix generation, the mean of the normal distribution.
+        # sigma: For the interaction matrix generation, The standard deviation of the normal distribution.
+        # c: The Connectance.
+        # delta: The stop condition for the steady state.
+        # final_time: The final time of the integration.
+        # max_step: The maximal allowed step size.
+        # epsilon: The value to insert to the non-survived species.
+        # eta: The threshold to remove low abundances.
+        # max_growth: The maximum growth rate.
+        # min_growth: The minimum growth rate.
+        # symmetric: If True, the interaction matrix will be symmetric.
+        # alpha: The power-law exponent for the interaction matrix strength.
+        # method: The method to solve the GLV model.
+        # multiprocess: If True, the class will use the multiprocessing module.
+        # switch_off: If True, the effect of the perturbed state species on the new inserted species is switched off and
+        #             also, the effect of the new species on the perturbed species is also switched off.
+        # n_jobs: The number of jobs to run in parallel.
+
         # input validation
         (self.num_samples, self.pool_size, self.num_survived_min, self.num_survived_max, self.mean, self.sigma, self.c,
          self.delta, self.final_time,
@@ -155,38 +152,34 @@ class HC:
                 switch_off, n_jobs)
 
     def _create_num_survived_list(self):
-        """
-        This function creates a list of the number of survived species for each sample.
-        Returns:
-        A list of the number of survived species for each sample.
-        """
+        # This function creates a list of the number of survived species for each sample.
+        # Returns:
+        # A list of the number of survived species for each sample.
+
         if self.num_survived_max > self.num_survived_min:
             return np.random.randint(self.num_survived_min, self.num_survived_max+1, self.num_samples)
         elif self.num_survived_max == self.num_survived_min:
             return (np.ones(self.num_samples) * self.num_survived_min).astype(int)
 
     def _set_growth_rate(self):
-        """
-        This function sets the growth rate for each specie.
-        Returns:
-        Numpy array of the growth rate for each specie.
-        """
+        # This function sets the growth rate for each specie.
+        # Returns:
+        # Numpy array of the growth rate for each specie.
+
         return np.random.uniform(self.min_growth, self.max_growth, self.pool_size)
 
     def _set_logistic_growth(self):
-        """
-        This function sets the logistic growth for each specie.
-        Returns:
-        Numpy array of the logistic growth for each specie.
-        """
+        # This function sets the logistic growth for each specie.
+        # Returns:
+        # Numpy array of the logistic growth for each specie.
+
         return np.ones(self.pool_size)
 
     def _set_initial_conditions(self):
-        """
-        This function sets the initial conditions for the GLV model.
-        Returns:
-        Numpy matrix that contains the initial conditions for the GLV model.
-        """
+        # This function sets the initial conditions for the GLV model.
+        # Returns:
+        # Numpy matrix that contains the initial conditions for the GLV model.
+
         # initialize the initial conditions
         Y_0 = np.zeros((self.num_samples, self.pool_size))
         # create the initial conditions matrix
@@ -197,11 +190,10 @@ class HC:
         return Y_0
 
     def _set_interaction_matrix(self):
-        """
-        This function sets the interaction matrix.
-        Returns:
-        Numpy matrix that represent the interaction matrix.
-        """
+        # This function sets the interaction matrix.
+        # Returns:
+        # Numpy matrix that represent the interaction matrix.
+
         # create the interaction matrix
         interaction_matrix = np.zeros((self.pool_size, self.pool_size))
         # generate the random numbers using the normal distribution
@@ -215,11 +207,9 @@ class HC:
         return -np.abs(interaction_matrix)
 
     def _set_symmetric_interaction_matrix(self):
-        """
-        This function sets the symmetric interaction matrix.
-        Returns:
-        Numpy matrix that represent the symmetric interaction matrix.
-        """
+        # Returns:
+        # Numpy matrix that represent the symmetric interaction matrix.
+
         # create the random graph
         G = nx.binomial_graph(self.pool_size, self.c)
         # create the mask
@@ -235,11 +225,9 @@ class HC:
         return -np.abs(interaction_matrix)
 
     def _create_full_interaction_matrix(self):
-        """
-        This function creates the full interaction matrix.
-        Returns:
-        Numpy matrix that represent the full interaction matrix.
-        """
+        # Returns:
+        # Numpy matrix that represent the full interaction matrix.
+
         if self.symmetric:
             N = self._set_symmetric_interaction_matrix()
         else:
@@ -251,12 +239,10 @@ class HC:
         return A
 
     def _generate_y_s(self):
-        """
-        This function generates y_s.
-        Returns:
-        y_s: Numpy matrix that represent the post perturbed state.
-        event_not_satisfied_ind_y_s: The indices of the samples that the steady state condition is not satisfied.
-        """
+        # Returns:
+        # y_s: Numpy matrix that represent the post perturbed state.
+        # event_not_satisfied_ind_y_s: The indices of the samples that the steady state condition is not satisfied.
+
         if self.switch_off:
             # switch off the effect of the perturbed species on the new inserted species and vice versa
             phi = self.Y_p[self.test_idx, :] != 0
@@ -272,11 +258,9 @@ class HC:
         return y_s, event_not_satisfied_ind_y_s
 
     def _set_int_strength_matrix(self):
-        """
-        This function sets the interaction strength matrix.
-        Returns:
-        Numpy matrix that represent the interaction strength matrix.
-        """
+        # Returns:
+        # Numpy matrix that represent the interaction strength matrix.
+
         if self.alpha is None:
             # The case of equal interaction strength
             return np.diag(np.ones(self.pool_size))
@@ -289,15 +273,14 @@ class HC:
 
     @staticmethod
     def _switch_off_interactions(A, phi):
-        """
-        This function switches off the effect of the species in the set phi on the new inserted species and vice versa.
-        Inputs:
-        A: numpy matrix of shape (# species, # species) that represents the interaction matrix.
-        phi: the indexes of the perturbed species.
-        Returns:
-        A_copy: numpy matrix of shape (# species, # species) that represents the interaction matrix with the effect
-                switched off.
-        """
+        # This function switches off the effect of the species in the set phi on the new inserted species and vice versa.
+        # Inputs:
+        # A: numpy matrix of shape (# species, # species) that represents the interaction matrix.
+        # phi: the indexes of the perturbed species.
+        # Returns:
+        # A_copy: numpy matrix of shape (# species, # species) that represents the interaction matrix with the effect
+        #         switched off.
+
         A_copy = A.copy()
         phi_c = np.setdiff1d(np.arange(A.shape[0]), phi)
         A_copy[np.ix_(phi_c, phi)] = 0
@@ -305,15 +288,14 @@ class HC:
         return A_copy
 
     def _apply_GLV(self, init_cond, norm, int_mat, n_samples, n_jobs):
-        """
-        This function applies the GLV model.
-        init_cond: The initial conditions for the GLV model.
-        norm: If True, the function will normalize the output.
-        int_mat: the interaction matrix.
-        n_samples: The number of samples.
-        Returns:
-        final_abundances: Numpy matrix that represents the final abundances.
-        """
+        # Inputs:
+        # init_cond: The initial conditions for the GLV model.
+        # norm: If True, the function will normalize the output.
+        # int_mat: the interaction matrix.
+        # n_samples: The number of samples.
+        # Returns:
+        # final_abundances: Numpy matrix that represents the final abundances.
+
         glv_object = Glv(n_samples, self.pool_size, self.delta, self.r, self.s, int_mat, init_cond,
                          self.final_time, self.max_step, normalize=norm, method=self.method,
                          multiprocess=self.multiprocess, n_jobs=n_jobs)
@@ -321,20 +303,17 @@ class HC:
         return final_abundances
 
     def _filter_norm_Y_p(self):
-        """
-        This function removes the low abundances and normalizes Y_p.
-        """
+        #This function removes the low abundances and normalizes Y_p.
+
         # remove the low abundances
         self.Y_p[self.Y_p < self.eta] = 0
         # normalize the perturbed state
         self.Y_p = self._normalize_cohort(self.Y_p)
 
     def _define_test_index(self):
-        """
-        This function defines the test index.
-        Returns:
-        test_idx: The index of the test sample.
-        """
+        # Returns:
+        # test_idx: The index of the test sample.
+
         # get the indexes of the samples that the steady state condition is satisfied
         event_satisfied = np.setdiff1d(np.arange(0, self.num_samples), self.event_not_satisfied_ind)
         # get the index of the test sample and verify the steady state condition satisfied for this sample
@@ -342,19 +321,17 @@ class HC:
         return test_idx
 
     def _modify_num_survived_list(self):
-        """
-        This function modifies the number of survived species list, by removing the samples that the steady state
-        condition is not satisfied.
-        """
+        # This function modifies the number of survived species list, by removing the samples that the steady state
+        # condition is not satisfied.
+
         self.num_survived_list = [item for idx, item in enumerate(self.num_survived_list) if idx not in
                                   np.hstack([self.event_not_satisfied_ind, self.test_idx])]
 
     def _insert_total_pool_test(self):
-        """
-        This function inserts the total pool to y.
-        Returns:
-        y: Numpy matrix that represents y, the test sample with the total pool inserted.
-        """
+        # This function inserts the total pool to y.
+        # Returns:
+        # y: Numpy matrix that represents y, the test sample with the total pool inserted.
+
         y = self.Y_p[self.test_idx, :].copy()
         mask = np.ones(self.pool_size, dtype=bool)
         idx = np.where(y != 0)
@@ -364,11 +341,10 @@ class HC:
         return y
 
     def _insert_total_pool_others(self):
-        """
-        This function inserts the total pool to the other samples (not the tested sample).
-        Returns:
-        Y: Numpy matrix that represents the new perturbed state for the other samples.
-        """
+        # This function inserts the total pool to the other samples (not the tested sample).
+        # Returns:
+        # Y: Numpy matrix that represents the new perturbed state for the other samples.
+
         Y = self.Y_p.copy()
         Y = np.delete(Y, self.test_idx, axis=0)
         for p in Y:
@@ -380,13 +356,11 @@ class HC:
         return Y
 
     def _remove_low_abundances(self, post):
-        """
-        This function removes the low abundances.
-        Inputs:
-        post: Numpy matrix that represents the post perturbed state.
-        Returns:
-        post_copy: Numpy matrix that represents the post perturbed state after removing the low abundances.
-        """
+        # Inputs:
+        # post: Numpy matrix that represents the post perturbed state.
+        # Returns:
+        # post_copy: Numpy matrix that represents the post perturbed state after removing the low abundances.
+
         post_copy = post.copy()
         zero_ind = np.where(post_copy < self.eta)
         post_copy[zero_ind] = 0.0
@@ -402,11 +376,9 @@ class HC:
         return cohort_normalized
 
     def get_results(self):
-        """
-        This function returns the results.
-        Returns:
-        results: Dictionary that contains the results.
-        """
+        #Returns:
+        #results: Dictionary that contains the results.
+
         results = {
             "Y_p": self.Y_p,
             "y_s": self.y_s.squeeze(),

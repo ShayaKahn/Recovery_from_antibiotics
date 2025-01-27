@@ -2,15 +2,13 @@ from scipy.spatial.distance import pdist, squareform
 import numpy as np
 
 class OptimalCohort:
-    """
-    This Class generates Optimal cohort by choosing the optimal sample for each subject by pre-defined criterion.
-    """
+    # This Class generates Optimal cohort by choosing the optimal sample for each subject by pre-defined criterion.
+
     def __init__(self, samples_dict, criterion='lower', method='braycurtis', norm=True):
-        """
-        samples_dict: dictionary that contains n subjects as a keys and a matrix of baseline samples, the rows of
-                      the matrices represent the samples and the columns represent the species.
-        criterion: the criterion to choose the optimal sample. Choose from 'lower' and 'mean'.
-        """
+        # samples_dict: dictionary that contains n subjects as a keys and a matrix of baseline samples, the rows of
+        #               the matrices represent the samples and the columns represent the species.
+        # criterion: the criterion to choose the optimal sample. Choose from 'lower' and 'mean'.
+
         self.samples_dict, self.criterion, self.method = OptimalCohort._validate_input(samples_dict, criterion, method)
         if norm:
             self._normalize_data()
@@ -34,11 +32,10 @@ class OptimalCohort:
         return samples_dict, criterion, method
 
     def _create_dissimilarity_matrix_dict(self):
-        """
-        Create a dissimilarity matrix for each subject's baseline matrix.
-        Return:
-        dissimilarity_matrix_dict: dictionary, keys are the subjects and values are the dissimilarity matrices.
-        """
+        # Create a dissimilarity matrix for each subject's baseline matrix.
+        # Return:
+        # dissimilarity_matrix_dict: dictionary, keys are the subjects and values are the dissimilarity matrices.
+
         # Calculate dissimilarity matrix for each subject's baseline matrix
         dissimilarity_matrix_dict = {}
         # iterate over the subjects
@@ -50,11 +47,11 @@ class OptimalCohort:
         return dissimilarity_matrix_dict
 
     def _get_optimal_index(self):
-        """
-        Get the index of the chosen sample for each subject.
-        Return:
-        ind_container: dictionary, keys are the subjects and values are the indices of the chosen samples.
-        """
+
+        # Get the index of the chosen sample for each subject.
+        # Return:
+        # ind_container: dictionary, keys are the subjects and values are the indices of the chosen samples.
+
         # get the index of the chosen sample for each subject
         ind_container = {}
 

@@ -6,28 +6,26 @@ from cython_modules.null_model_functions import generate_samples
 import operator
 
 class NullModel:
-    """
-    This class is responsible to create the null model for a test subject. Given a baseline sample,
-     antibiotics sample and post antibiotics sample (post-antibiotics sample).
-    """
+    # This class is responsible to create the null model for a test subject. Given a baseline sample,
+    # antibiotics sample and post antibiotics sample (post-antibiotics sample).
+
     def __init__(self, test_base_sample, test_ABX_sample, baseline_cohort, test_post_ABX_matrix,
                  num_reals=100, timepoints=0, strict=True):
-        """
-        Inputs:
-        test_base_sample: baseline sample of the test subject, numpy array of shape (# species,).
-        test_ABX_sample: antibiotics sample of the test subject, numpy array of shape (# species,).
-        baseline_cohort: baseline cohort, numpy array of shape (# samples, # species).
-        test_post_ABX_matrix: numpy matrix of shape (# samples, # species) that contains the post
-                              antibiotics samples of the test subject ordered chronologically in the rows.
-        num_reals: number of realizations of the null model (number of synthetic samples).
-        timepoints: Integer, the number of time points after antibiotics administration
-                    the returned species considered as survived.
-        strict: Boolean, if True, the returned species at time t are the species that are present in the baseline,
-                absent in the antibiotic treatment and present in all the post antibiotic samples where t >= timepoints.
-                If False, the returned species are the same except that they are present in time t = timepoints and can
-                be absent in the post antibiotic samples at time t > timepoints except of the last sample in
-                 test_post_ABX_matrix.
-        """
+        # Inputs:
+        # test_base_sample: baseline sample of the test subject, numpy array of shape (# species,).
+        # test_ABX_sample: antibiotics sample of the test subject, numpy array of shape (# species,).
+        # baseline_cohort: baseline cohort, numpy array of shape (# samples, # species).
+        # test_post_ABX_matrix: numpy matrix of shape (# samples, # species) that contains the post
+        #                      antibiotics samples of the test subject ordered chronologically in the rows.
+        # num_reals: number of realizations of the null model (number of synthetic samples).
+        # timepoints: Integer, the number of time points after antibiotics administration
+        #            the returned species considered as survived.
+        # strict: Boolean, if True, the returned species at time t are the species that are present in the baseline,
+        #        absent in the antibiotic treatment and present in all the post antibiotic samples where t >= timepoints.
+        #        If False, the returned species are the same except that they are present in time t = timepoints and can
+        #        be absent in the post antibiotic samples at time t > timepoints except of the last sample in
+        #        test_post_ABX_matrix.
+
         # validate the inputs.
         (self.test_base_sample, self.test_ABX_sample, self.baseline_cohort,
          self.test_post_ABX_matrix) = self._validate_input_matrices(test_base_sample, test_ABX_sample,
@@ -97,12 +95,11 @@ class NullModel:
         return num_reals, timepoints, strict
 
     def _find_subset(self):
-        """
-        Find the subset of the species should be removed during distance calculations.
-        Return:
-        indexes_comp: indexes of the species that should be removed.
-        indexes: indexes of the species that should be kept.
-        """
+        # Find the subset of the species should be removed during distance calculations.
+        # Return:
+        # indexes_comp: indexes of the species that should be removed.
+        # indexes: indexes of the species that should be kept.
+
         # find the survived species.
         survived = (self.test_base_sample != 0) & (self.test_ABX_sample != 0) & (self.test_post_ABX_sample != 0)
         # find the resistant species.
@@ -118,11 +115,10 @@ class NullModel:
         return indexes_comp, indexes
 
     def _create_synthetic_samples(self):
-        """
-        Create the synthetic samples.
-        Return:
-        synthetic_samples, normalized numpy array of shape (# realizations, # species).
-        """
+        # Create the synthetic samples.
+        # Return:
+        # synthetic_samples, normalized numpy array of shape (# realizations, # species).
+
         # set the constraint on the number of species
         stop = np.size(np.nonzero(self.test_post_ABX_sample[self.subset]))
 
@@ -152,13 +148,12 @@ class NullModel:
         return cohort_normalized
 
     def _bray_curtis(self):
-        """
-        Calculate the Bray Curtis distance between the test sample and the baseline sample and the Bray Curtis distance
-        between the synthetic samples and the baseline sample.
-        Return:
-        dist_real: distance between the test sample and the baseline sample.
-        dist_synthetic: distances between the shuffled samples and the baseline sample.
-        """
+        # Calculate the Bray Curtis distance between the test sample and the baseline sample and the Bray Curtis distance
+        # between the synthetic samples and the baseline sample.
+        # Return:
+        # dist_real: distance between the test sample and the baseline sample.
+        # dist_synthetic: distances between the shuffled samples and the baseline sample.
+
         # Calculate the Bray Curtis distance between the test sample and the baseline sample.
         dist_real = braycurtis(self._normalize_cohort(self.test_base_sample[self.subset]),
                                self._normalize_cohort(self.test_post_ABX_sample[self.subset]))
@@ -168,13 +163,12 @@ class NullModel:
         return dist_real, dist_synthetic
 
     def _rJSD(self):
-        """
-        Calculate the rJSD distance between the test sample and the baseline sample and the rJSD distance
-        between the synthetic samples and the baseline sample.
-        Return:
-        dist_real: distance between the test sample and the baseline sample.
-        dist_synthetic: distances between the shuffled samples and the baseline sample.
-        """
+        # Calculate the rJSD distance between the test sample and the baseline sample and the rJSD distance
+        # between the synthetic samples and the baseline sample.
+        # Return:
+        # dist_real: distance between the test sample and the baseline sample.
+        # dist_synthetic: distances between the shuffled samples and the baseline sample.
+
         # Calculate the rJSD distance between the test sample and the baseline sample.
         dist_real = jensenshannon(self._normalize_cohort(self.test_base_sample[self.subset]),
                                   self._normalize_cohort(self.test_post_ABX_sample[self.subset]))
@@ -185,13 +179,12 @@ class NullModel:
         return dist_real, dist_synthetic
 
     def _jaccard(self):
-        """
-        Calculate the Jaccard distance between the test sample and the baseline sample and the Jaccard distance
-        between the synthetic samples and the baseline sample.
-        Return:
-        dist_real: distance between the test sample and the baseline sample.
-        dist_synthetic: distances between the shuffled samples and the baseline sample.
-        """
+        # Calculate the Jaccard distance between the test sample and the baseline sample and the Jaccard distance
+        # between the synthetic samples and the baseline sample.
+        # Return:
+        # dist_real: distance between the test sample and the baseline sample.
+        # dist_synthetic: distances between the shuffled samples and the baseline sample.
+
         # Calculate the Jaccard distance between the test sample and the baseline sample.
         dist_real = 1 - Similarity(self.test_base_sample[self.subset], self.test_post_ABX_sample[self.subset],
                                    method="Jaccard").calculate_similarity()
@@ -203,13 +196,11 @@ class NullModel:
         return dist_real, dist_synthetic
 
     def _weighted_jaccard_symmetric(self):
-        """
-        Calculate the Symmetric Weighted Jaccard distance between the test sample and the baseline sample and the
-        Symmetric Weighted Jaccard distance between the synthetic samples and the baseline sample.
-        Return:
-        dist_real: distance between the test sample and the baseline sample.
-        dist_synthetic: distances between the shuffled samples and the baseline sample.
-        """
+        # Calculate the Symmetric Weighted Jaccard distance between the test sample and the baseline sample and the
+        # Return:
+        # dist_real: distance between the test sample and the baseline sample.
+        # dist_synthetic: distances between the shuffled samples and the baseline sample.
+
         # Calculate the Jaccard distance between the test sample and the baseline sample.
         dist_real = 1 - Similarity(self.test_base_sample[self.subset], self.test_post_ABX_sample[self.subset],
                                    method="Weighted Jaccard symmetric").calculate_similarity()
@@ -222,13 +213,12 @@ class NullModel:
         return dist_real, dist_synthetic
 
     def _specificity(self):
-        """
-        Calculate the Specificity distance between the test sample and the baseline sample and the Specificity distance
-        between the synthetic samples and the baseline sample.
-        Return:
-        dist_real: distance between the test sample and the baseline sample.
-        dist_synthetic: distances between the shuffled samples and the baseline sample.
-        """
+        # Calculate the Specificity distance between the test sample and the baseline sample and the Specificity distance
+        # between the synthetic samples and the baseline sample.
+        # Return:
+        # dist_real: distance between the test sample and the baseline sample.
+        # dist_synthetic: distances between the shuffled samples and the baseline sample.
+
         # Calculate the Specificity distance between the test sample and the baseline sample.
         dist_real = 1 - Similarity(self.test_base_sample[self.subset], self.test_post_ABX_sample[self.subset],
                                    method="Specificity").calculate_similarity()
@@ -240,13 +230,12 @@ class NullModel:
         return dist_real, dist_synthetic
 
     def _recovery(self):
-        """
-        Calculate the Recovery distance between the test sample and the baseline sample and the Recovery distance
-        between the synthetic samples and the baseline sample.
-        Return:
-        dist_real: distance between the test sample and the baseline sample.
-        dist_synthetic: distances between the shuffled samples and the baseline sample.
-        """
+        # Calculate the Recovery distance between the test sample and the baseline sample and the Recovery distance
+        # between the synthetic samples and the baseline sample.
+        # Return:
+        # dist_real: distance between the test sample and the baseline sample.
+        # dist_synthetic: distances between the shuffled samples and the baseline sample.
+
         # Calculate the Recovery distance between the test sample and the baseline sample.
         dist_real = 1 - Similarity(self.test_base_sample[self.subset], self.test_post_ABX_sample[self.subset],
                                    method="Recovery").calculate_similarity()
@@ -258,16 +247,15 @@ class NullModel:
         return dist_real, dist_synthetic
 
     def distance(self, method="Bray Curtis", otu_ids=None, tree=None):
-        """
-        Inputs:
-        method: distance method, from the option: "Bray Curtis", "rJSD", "Jaccard", "Weighted unifrac",
-                "Unweighted unifrac", "Specificity", "Recovery".
-        otu_ids: list that represent the OTU identifiers.
-        tree: phylogenetic tree that corresponds to the OTU identifiers.
-        Return:
-             distance between the test sample and the baseline sample and the distances between the shuffled samples
-             and the baseline sample.
-        """
+        # Inputs:
+        # method: distance method, from the option: "Bray Curtis", "rJSD", "Jaccard", "Weighted unifrac",
+        #         "Unweighted unifrac", "Specificity", "Recovery".
+        # otu_ids: list that represent the OTU identifiers.
+        # tree: phylogenetic tree that corresponds to the OTU identifiers.
+        # Return:
+        # distance between the test sample and the baseline sample and the distances between the shuffled samples
+        # and the baseline sample.
+
         # Check if the method is valid.
         if method not in ["Bray Curtis", "rJSD", "Jaccard", "Weighted unifrac", "Unweighted unifrac",
                           "Specificity", "Recovery", "Weighted Jaccard symmetric"]:
@@ -295,25 +283,23 @@ class NullModel:
             return self._recovery()
 
     def _construct_filtered_data(self, first_sample, second_sample):
-        """
-        Inputs:
-        first_sample: numpy array of shape (# species,).
-        second_sample: numpy array of shape (# species,)
-        Return:
-        filtered_data: normalized numpy matrix of shape (2, # species). Where the ARS species are removed.
-        """
+        # Inputs:
+        # first_sample: numpy array of shape (# species,).
+        # second_sample: numpy array of shape (# species,)
+        # Return:
+        # filtered_data: normalized numpy matrix of shape (2, # species). Where the ARS species are removed.
+
         data = np.vstack([first_sample, second_sample])
         filtered_data = self._normalize_cohort(data[:, self.subset].squeeze())
         return filtered_data
 
     def _construct_pruned_tree(self, otu_ids, tree):
-        """
-        Inputs:
-        otu_ids: List that represent the OTU identifiers.
-        tree: The phylogenetic tree that corresponds to the OTU identifiers.
-        Returns:
-        pruned_tree: The pruned tree that contains only the non-ARS species.
-        """
+        # Inputs:
+        # otu_ids: List that represent the OTU identifiers.
+        # tree: The phylogenetic tree that corresponds to the OTU identifiers.
+        # Returns:
+        # pruned_tree: The pruned tree that contains only the non-ARS species.
+
         remove_otu_ids = [otu_ids[i] for i in range(len(otu_ids)) if i in self.subset_comp]
         pruned_tree = tree.copy()
         for node in remove_otu_ids:
@@ -323,34 +309,31 @@ class NullModel:
         return pruned_tree
 
     def _filter_otu_ids(self, otu_ids):
-        """
-        Inputs:
-        otu_ids: List that represent the OTU identifiers.
-        Return:
-        filtered_otu_ids: List that contains only the non-ARS species.
-        """
+        # Inputs:
+        # otu_ids: List that represent the OTU identifiers.
+        # Return:
+        # filtered_otu_ids: List that contains only the non-ARS species.
+
         return [otu_ids[i] for i in range(len(otu_ids)) if i in self.subset]
 
     @staticmethod
     def _create_sample_ids(data):
-        """
-        Inputs:
-        data: numpy matrix of shape (2, # species).
-        Return:
-        sample_ids: List that contains the sample identifiers (the indexes of the samples).
-        """
+        # Inputs:
+        # data: numpy matrix of shape (2, # species).
+        # Return:
+        # sample_ids: List that contains the sample identifiers (the indexes of the samples).
+
         return np.arange(0, data.shape[0], 1).tolist()
 
     def _unifrac(self, method, otu_ids=None, tree=None):
-        """
-        Inputs:
-        method: distance method, either "Weighted unifrac" or "Unweighted unifrac".
-        otu_ids: list that represent the OTU identifiers.
-        tree: phylogenetic tree that corresponds to the OTU identifiers.
-        :return:
-        dist_real: distance between the test sample and the baseline sample.
-        dist_shuffled: distances between the shuffled samples and the baseline sample.
-        """
+        # Inputs:
+        # method: distance method, either "Weighted unifrac" or "Unweighted unifrac".
+        # otu_ids: list that represent the OTU identifiers.
+        # tree: phylogenetic tree that corresponds to the OTU identifiers.
+        # Return:
+        # dist_real: distance between the test sample and the baseline sample.
+        # dist_shuffled: distances between the shuffled samples and the baseline sample.
+
         # Filter the ARS species.
         filtered_data = self._construct_filtered_data(self.test_base_sample, self.test_post_ABX_sample)
         sample_ids = self._create_sample_ids(filtered_data)
@@ -379,12 +362,11 @@ class NullModel:
             return dist_real, dist_synthetic
 
     def _returned_species(self):
-        """
-        Find the returned species at each time point.
-        Return:
-        timepoints_vals: list of boolean numpy arrays of shape (# species,) that represent the returned species at each
-                         time point.
-        """
+        # Find the returned species at each time point.
+        # Return:
+        # timepoints_vals: list of boolean numpy arrays of shape (# species,) that represent the returned species at each
+        #                  time point.
+
         # define the number of time points.
         num_timepoints = self.test_post_ABX_matrix.shape[0]
         # define the operators list.

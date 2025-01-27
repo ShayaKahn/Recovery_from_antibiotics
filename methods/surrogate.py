@@ -4,31 +4,31 @@ import operator
 from data_processing.optimal import OptimalCohort
 
 class Surrogate:
-    """
-    This class implements Surrogate data analysis
-    """
+
+    # This class implements Surrogate data analysis
+
     def __init__(self, base_samples_collections, test_base_sample, test_post_ABX_matrix, test_ABX_sample, timepoints=0,
                  strict=True, naive=False, method_opt='jaccard'):
-        """
-        Inputs:
-        base_samples_collections: dictionary of numpy vectors of shape (# species, ) or numpy matrices of shape
-                                  (# samples, # species) that represent the baseline of different subjects in the
-                                   experiment. The keys are the identifiers of the subjects.
-        test_base_sample: dictionary that contain a numpy vector of shape (# species, ) that represents the
-                          baseline sample of a test subject. The key is subjects identifier.
-        test_post_ABX_matrix: numpy matrix of shape (# samples, # species) that contains the post antibiotics samples of
-                              the test subject ordered chronologically in the rows.
-        test_ABX_sample: numpy array of shape (# species, ) that represents the antibiotics sample of the test subject.
-        timepoints: Integer, the number of time points after antibiotics administration the returned species considered
-                             as survived. If dormant is False, timepoints have no meaning (None is the default).
-        strict: Boolean, if True, the returned species at time t are the species that are present in the baseline,
-                absent in the antibiotic treatment and present in all the post antibiotic samples where t >= timepoints.
-                If False, the returned species are the same except that they are present in time t = timepoints and can
-                be absent in the post antibiotic samples at time t > timepoints except of the last sample in
-                 test_post_ABX_matrix.
-        naive: Boolean, if True, the subset of the species is all the species.
-        method_opt: String, the method used to choose the optimal samples. Choose from 'jaccard' and 'braycurtis'.
-        """
+
+        # Inputs:
+        # base_samples_collections: dictionary of numpy vectors of shape (# species, ) or numpy matrices of shape
+        #                           (# samples, # species) that represent the baseline of different subjects in the
+        #                            experiment. The keys are the identifiers of the subjects.
+        # test_base_sample: dictionary that contain a numpy vector of shape (# species, ) that represents the
+        #                   baseline sample of a test subject. The key is subjects identifier.
+        # test_post_ABX_matrix: numpy matrix of shape (# samples, # species) that contains the post antibiotics samples of
+        #                       the test subject ordered chronologically in the rows.
+        # test_ABX_sample: numpy array of shape (# species, ) that represents the antibiotics sample of the test subject.
+        # timepoints: Integer, the number of time points after antibiotics administration the returned species considered
+        #                      as survived. If dormant is False, timepoints have no meaning (None is the default).
+        # strict: Boolean, if True, the returned species at time t are the species that are present in the baseline,
+        #         absent in the antibiotic treatment and present in all the post antibiotic samples where t >= timepoints.
+        #         If False, the returned species are the same except that they are present in time t = timepoints and can
+        #         be absent in the post antibiotic samples at time t > timepoints except of the last sample in
+        #          test_post_ABX_matrix.
+        # naive: Boolean, if True, the subset of the species is all the species.
+        # method_opt: String, the method used to choose the optimal samples. Choose from 'jaccard' and 'braycurtis'.
+
         (self.test_key, self.test_base_sample, self.base_samples_collections, self.test_post_ABX_matrix,
          self.test_ABX_sample) = Surrogate._validate_matrix_input(base_samples_collections, test_base_sample,
                                                                   test_post_ABX_matrix, test_ABX_sample)
@@ -98,12 +98,11 @@ class Surrogate:
         return timepoints, strict, naive, method_opt
 
     def _find_subset(self):
-        """
-        Find the subset of the species should be removed during distance calculations.
-        Return:
-        indexes_comp: indexes of the species that should be removed.
-        indexes: indexes of the species that should be kept.
-        """
+        # Find the subset of the species should be removed during distance calculations.
+        # Return:
+        # indexes_comp: indexes of the species that should be removed.
+        # indexes: indexes of the species that should be kept.
+
         # find the survived species.
         survived = (self.test_base_sample != 0) & (self.test_ABX_sample != 0) & (self.test_post_ABX_sample != 0)
         # find the resistant species.

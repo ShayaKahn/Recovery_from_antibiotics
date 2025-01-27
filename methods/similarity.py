@@ -2,18 +2,16 @@ import numpy as np
 from skbio.diversity import beta_diversity
 
 class Similarity:
-    """
-    This class calculates different similarity measures between two given samples or between sample and matrix.
-    """
+    # This class calculates different similarity measures between two given samples or between sample and matrix.
+
     def __init__(self, sample_first, matrix, method="Overlap", norm=True):
-        """
-        Inputs:
-        sample_first: first sample, 1D array of shape (# species,) or 1D array of shapes (1, # species), (# species, 1).
-        matrix: matrix, 1D array of shape (# species,) or 1D array of shapes (1, # species), (# species, 1)
-        or matrix of shape (# samples, # species).
-        method: similarity measure to be calculated. Default is "Overlap".
-        norm: boolean, if True the samples will be normalized. Default is True.
-        """
+        # Inputs:
+        # sample_first: first sample, 1D array of shape (# species,) or 1D array of shapes (1, # species), (# species, 1).
+        # matrix: matrix, 1D array of shape (# species,) or 1D array of shapes (1, # species), (# species, 1)
+        # or matrix of shape (# samples, # species).
+        # method: similarity measure to be calculated. Default is "Overlap".
+        # norm: boolean, if True the samples will be normalized. Default is True.
+
         self.sample_first, self.matrix, self.method = self._validate_input(sample_first, matrix, method)
         # Normalize the samples.
         if not isinstance(norm, bool):
@@ -22,15 +20,13 @@ class Similarity:
             self.sample_first, self.matrix = self._normalize()
 
     def _validate_input(self, sample_first, matrix, method):
-        """
-        This method validates the inputs.
-        Inputs:
-        As defined in the __init__ method.
-        Returns:
-        sample_first: first sample, 1D array of shape (# species,).
-        matrix: matrix, 1D array of shape (# species,) or matrix of shape (# samples, # species).
-        method: As defined in the __init__ method.
-        """
+        # Inputs:
+        # As defined in the __init__ method.
+        # Returns:
+        # sample_first: first sample, 1D array of shape (# species,).
+        # matrix: matrix, 1D array of shape (# species,) or matrix of shape (# samples, # species).
+        # method: As defined in the __init__ method.
+
         # Check if the inputs are numpy arrays.
         if not isinstance(sample_first, np.ndarray) or not isinstance(matrix, np.ndarray):
             raise TypeError("sample_first and sample_second must be numpy arrays")
@@ -87,26 +83,24 @@ class Similarity:
 
     @staticmethod
     def _find_intersection(v1, v2):
-        """
-        This method finds the shared non-zero indexes of the two samples.
-        Inputs:
-        v1: one dimentional numpy array
-        v2: one dimentional numpy array
-        Returns:
-        The set s with represent the intersected indexes
-        """
+        # This method finds the shared non-zero indexes of the two samples.
+        # Inputs:
+        # v1: one dimentional numpy array
+        # v2: one dimentional numpy array
+        # Returns:
+        # The set s with represent the intersected indexes
+
         nonzero_index_first = np.nonzero(v1)  # Find the non-zero index of the first sample.
         nonzero_index_second = np.nonzero(v2)  # Find the non-zero index of the second sample.
         s = np.intersect1d(nonzero_index_first, nonzero_index_second)  # Find the intersection.
         return s
 
     def _overlap(self):
-        """
-        This method calculates the overlap between the first sample and the matrix.
-        Rerurns:
-        if the matrix is 1D: overlap value.
-        if the matrix is 2D: numpy array that contain the overlap values.
-        """
+        # This method calculates the overlap between the first sample and the matrix.
+        # Rerurns:
+        # if the matrix is 1D: overlap value.
+        # if the matrix is 2D: numpy array that contain the overlap values.
+
         if self.matrix.ndim == 1:
             # find the intersection
             s = self._find_intersection(self.sample_first, self.matrix)
@@ -124,12 +118,11 @@ class Similarity:
             return np.array(overlaps)
 
     def _jaccard(self):
-        """
-        This method calculates the Jaccard similarity between the first sample and the matrix.
-        Returns:
-        if the matrix is 1D: Jaccard similarity value.
-        if the matrix is 2D: numpy array that contain the Jaccard similarity values.
-        """
+        # This method calculates the Jaccard similarity between the first sample and the matrix.
+        # Returns:
+        # if the matrix is 1D: Jaccard similarity value.
+        # if the matrix is 2D: numpy array that contain the Jaccard similarity values.
+
         sample_first_boolean = np.where(self.sample_first != 0, 1, 0)
         matrix_boolean = np.where(self.matrix != 0, 1, 0)
         # find the intersection and the union
@@ -149,12 +142,11 @@ class Similarity:
             return jaccard
 
     def _dice(self):
-        """
-        This method calculates the Dice similarity between the first sample and the matrix.
-        Returns:
-        if the matrix is 1D: Dice similarity value.
-        if the matrix is 2D: numpy array that contain the Dice similarity values.
-        """
+        # This method calculates the Dice similarity between the first sample and the matrix.
+        # Returns:
+        # if the matrix is 1D: Dice similarity value.
+        # if the matrix is 2D: numpy array that contain the Dice similarity values.
+
         sample_first_boolean = np.where(self.sample_first != 0, 1, 0)
         matrix_boolean = np.where(self.matrix != 0, 1, 0)
         # find the intersection
@@ -171,12 +163,11 @@ class Similarity:
             return dice
 
     def _szymkiewicz_simpson(self):
-        """
-        This method calculates the Szymkiewicz Simpson similarity between the first sample and the matrix.
-        Returns:
-        if the matrix is 1D: Szymkiewicz Simpson similarity value.
-        if the matrix is 2D: numpy array that contain the Szymkiewicz Simpson similarity values.
-        """
+        # This method calculates the Szymkiewicz Simpson similarity between the first sample and the matrix.
+        # Returns:
+        # if the matrix is 1D: Szymkiewicz Simpson similarity value.
+        # if the matrix is 2D: numpy array that contain the Szymkiewicz Simpson similarity values.
+
         sample_first_boolean = np.where(self.sample_first != 0, 1, 0)
         matrix_boolean = np.where(self.matrix != 0, 1, 0)
         # find the intersection
@@ -195,12 +186,11 @@ class Similarity:
             return ss
 
     def _recovery(self):
-        """
-        This method calculates the Recovery similarity between the first sample and the matrix.
-        Returns:
-        if the matrix is 1D: Recovery similarity value.
-        if the matrix is 2D: numpy array that contain the Recovery similarity values.
-        """
+        # This method calculates the Recovery similarity between the first sample and the matrix.
+        # Returns:
+        # if the matrix is 1D: Recovery similarity value.
+        # if the matrix is 2D: numpy array that contain the Recovery similarity values.
+
         sample_first_boolean = np.where(self.sample_first != 0, 1, 0)
         matrix_boolean = np.where(self.matrix != 0, 1, 0)
         # find the intersection
@@ -219,12 +209,11 @@ class Similarity:
             return recovery
 
     def _specificity(self):
-        """
-        This method calculates the Specificity similarity between the first sample and the matrix.
-        Returns:
-        if the matrix is 1D: Specificity similarity value.
-        if the matrix is 2D: numpy array that contain the Specificity similarity values.
-        """
+        # This method calculates the Specificity similarity between the first sample and the matrix.
+        # Returns:
+        # if the matrix is 1D: Specificity similarity value.
+        # if the matrix is 2D: numpy array that contain the Specificity similarity values.
+
         sample_first_boolean = np.where(self.sample_first != 0, 1, 0)
         matrix_boolean = np.where(self.matrix != 0, 1, 0)
         # find the intersection
@@ -243,12 +232,11 @@ class Similarity:
             return specificity
 
     def _weighted_jaccard(self):
-        """
-        This method calculates the Weighted Jaccard similarity between the first sample and the matrix.
-        Returns:
-        if the matrix is 1D: Weighted Jaccard similarity value.
-        if the matrix is 2D: numpy array that contain the Weighted Jaccard similarity values.
-        """
+        # This method calculates the Weighted Jaccard similarity between the first sample and the matrix.
+        # Returns:
+        # if the matrix is 1D: Weighted Jaccard similarity value.
+        # if the matrix is 2D: numpy array that contain the Weighted Jaccard similarity values.
+
         # find the intersection and the union
         sample_first_boolean = np.where(self.sample_first != 0, 1, 0)
         matrix_boolean = np.where(self.matrix != 0, 1, 0)
@@ -268,12 +256,11 @@ class Similarity:
             return jaccard_w
 
     def _weighted_jaccard_symmetric(self):
-        """
-        This method calculates the symmetric Weighted Jaccard similarity between the first sample and the matrix.
-        Returns:
-        if the matrix is 1D: symmetric Weighted Jaccard similarity value.
-        if the matrix is 2D: numpy array that contain the symmetric Weighted Jaccard similarity values.
-        """
+        # This method calculates the symmetric Weighted Jaccard similarity between the first sample and the matrix.
+        # Returns:
+        # if the matrix is 1D: symmetric Weighted Jaccard similarity value.
+        # if the matrix is 2D: numpy array that contain the symmetric Weighted Jaccard similarity values.
+
         if self.matrix.ndim == 1:
             # calculate the symmetric Weighted Jaccard similarity
             min_sum = np.sum(np.minimum(self.sample_first, self.matrix))
@@ -288,15 +275,14 @@ class Similarity:
             return jaccard_w_sym
 
     def _unweighted_unifrac(self, tree, otu_ids):
-        """
-        This method calculates the Unweighted Unifrac similarity between the first sample and the matrix.
-        Inputs:
-        tree: phylogenetic tree object.
-        otu_ids: list of OTU ids.
-        Returns:
-        if the matrix is 1D: Unweighted Unifrac similarity value.
-        if the matrix is 2D: numpy array that contain the Unweighted Unifrac similarity values.
-        """
+        # This method calculates the Unweighted Unifrac similarity between the first sample and the matrix.
+        # Inputs:
+        # tree: phylogenetic tree object.
+        # otu_ids: list of OTU ids.
+        # Returns:
+        # if the matrix is 1D: Unweighted Unifrac similarity value.
+        # if the matrix is 2D: numpy array that contain the Unweighted Unifrac similarity values.
+
         if self.matrix.ndim == 1:
             # calculate the Unweighted Unifrac similarity
             data = np.vstack([self.sample_first, self.matrix])
@@ -314,15 +300,14 @@ class Similarity:
                                              tree=tree, validate=False)[1, 0])
             return np.array(uu)
     def calculate_similarity(self, tree=None, otu_ids=None):
-        """
-        This method calculates the similarity between the first sample and the matrix.
-        Inputs:
-        tree: phylogenetic tree object. Default is None. Only used for Unweighted Unifrac.
-        otu_ids: list of OTU ids. Default is None. Only used for Unweighted Unifrac.
-        Returns:
-        if the matrix is 1D: similarity value.
-        if the matrix is 2D: numpy array that contain the similarity values.
-        """
+        # This method calculates the similarity between the first sample and the matrix.
+        # Inputs:
+        # tree: phylogenetic tree object. Default is None. Only used for Unweighted Unifrac.
+        # otu_ids: list of OTU ids. Default is None. Only used for Unweighted Unifrac.
+        # Returns:
+        # if the matrix is 1D: similarity value.
+        # if the matrix is 2D: numpy array that contain the similarity values.
+
         # Calculation of the similarity based on the method.
         if self.method == "Overlap":
             return self._overlap()
