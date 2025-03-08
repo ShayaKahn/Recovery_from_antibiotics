@@ -5,47 +5,48 @@ import networkx as nx
 from scipy.stats import powerlaw
 
 class HC:
-    # This class is responsible for the simulation of the historical contingency model.
-    # I will write some notations to make the variables names more clear:
-    # A: represents the interaction matrix in the GLV model.
-    # s: represents the logistic growth vector in the GLV model.
-    # r: represents the growth rate vector in the GLV model.
-    # Y_0: represents the initial conditions matrix in the GLV model, where rows are samples and columns are species.
-    # Y_p: represents the perturbed state in the GLV model. Each sample has a specific number of present species.
-    # y: represents the test sample in the perturbed state. I choose the first sample that satisfies the steady state
-    #    condition.
-    # epsilon: represents the value to insert to the non-survived species. This value should be small and represent
-    #         the effective amount of exposure of the system to the new species.
-    # eta: represents the threshold to remove low abundances. This value should be small and represent the minimal
-    #     abundance that the species should have to be considered as present.
-    # y_s: represents the post perturbed state for the test sample. The steady state after inserting the total pool.
-    # Y_s: represents the post perturbed state for the other samples. The steady state after inserting the total pool.
+    """ This class is responsible for the simulation of the historical contingency model.
+    I will write some notations to make the variables names more clear:
+    A: represents the interaction matrix in the GLV model.
+    s: represents the logistic growth vector in the GLV model.
+    r: represents the growth rate vector in the GLV model.
+    Y_0: represents the initial conditions matrix in the GLV model, where rows are samples and columns are species.
+    Y_p: represents the perturbed state in the GLV model. Each sample has a specific number of present species.
+    y: represents the test sample in the perturbed state. I choose the first sample that satisfies the steady state
+       condition.
+    epsilon: represents the value to insert to the non-survived species. This value should be small and represent
+            the effective amount of exposure of the system to the new species.
+    eta: represents the threshold to remove low abundances. This value should be small and represent the minimal
+         abundance that the species should have to be considered as present.
+    y_s: represents the post perturbed state for the test sample. The steady state after inserting the total pool.
+    Y_s: represents the post perturbed state for the other samples. The steady state after inserting the total pool. """
     def __init__(self, num_samples, pool_size, num_survived_min, num_survived_max, mean, sigma, c, delta, final_time,
                  max_step, epsilon, eta, min_growth, max_growth, symmetric=True, alpha=None, method='RK45',
                  multiprocess=True, switch_off=False, n_jobs=4):
-        # Inputs:
-        # num_samples: The number of samples.
-        # pool_size: The total size of the population.
-        # num_survived_min: The minimal number of survived species.
-        # num_survived_max: The maximal number of survived species.
-        # mean: For the interaction matrix generation, the mean of the normal distribution.
-        # sigma: For the interaction matrix generation, The standard deviation of the normal distribution.
-        # c: The Connectance.
-        # delta: The stop condition for the steady state.
-        # final_time: The final time of the integration.
-        # max_step: The maximal allowed step size.
-        # epsilon: The value to insert to the non-survived species.
-        # eta: The threshold to remove low abundances.
-        # max_growth: The maximum growth rate.
-        # min_growth: The minimum growth rate.
-        # symmetric: If True, the interaction matrix will be symmetric.
-        # alpha: The power-law exponent for the interaction matrix strength.
-        # method: The method to solve the GLV model.
-        # multiprocess: If True, the class will use the multiprocessing module.
-        # switch_off: If True, the effect of the perturbed state species on the new inserted species is switched off and
-        #             also, the effect of the new species on the perturbed species is also switched off.
-        # n_jobs: The number of jobs to run in parallel.
-
+        """
+        Inputs:
+        num_samples: The number of samples.
+        pool_size: The total size of the population.
+        num_survived_min: The minimal number of survived species.
+        num_survived_max: The maximal number of survived species.
+        mean: For the interaction matrix generation, the mean of the normal distribution.
+        sigma: For the interaction matrix generation, The standard deviation of the normal distribution.
+        c: The Connectance.
+        delta: The stop condition for the steady state.
+        final_time: The final time of the integration.
+        max_step: The maximal allowed step size.
+        epsilon: The value to insert to the non-survived species.
+        eta: The threshold to remove low abundances.
+        max_growth: The maximum growth rate.
+        min_growth: The minimum growth rate.
+        symmetric: If True, the interaction matrix will be symmetric.
+        alpha: The power-law exponent for the interaction matrix strength.
+        method: The method to solve the GLV model.
+        multiprocess: If True, the class will use the multiprocessing module.
+        switch_off: If True, the effect of the perturbed state species on the new inserted species is switched off and
+                    also, the effect of the new species on the perturbed species is also switched off.
+        n_jobs: The number of jobs to run in parallel.
+        """
         # input validation
         (self.num_samples, self.pool_size, self.num_survived_min, self.num_survived_max, self.mean, self.sigma, self.c,
          self.delta, self.final_time,

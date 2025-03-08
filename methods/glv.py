@@ -13,7 +13,7 @@ class Glv:
 
         # Inputs:
         # n_samples: The number of samples you are need to compute.
-        # n_species: The number of species at each sample.
+        # n_species: The number of species at each sample.s
         # delta: This parameter is responsible for the stop condition at the steady state.
         # r: growth rate vector of shape (n_species,).
         # s: logistic growth term vector of size (n_species,).

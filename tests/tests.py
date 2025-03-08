@@ -318,7 +318,7 @@ class TestHC(TestCase):
         self.max_step = 0.05
         self.epsilon = 1e-4
         self.phi = 1e-4
-        self.min_growth = 0.9
+        self.min_growth = 1
         self.max_growth = 1
         self.symmetric = True
         self.alpha = None
