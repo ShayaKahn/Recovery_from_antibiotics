@@ -3,15 +3,15 @@ from scipy.spatial.distance import braycurtis, euclidean
 
 class Dissimilarity:
 
-    # This class calculates the dissimilarity value between two given samples.
+    """This class calculates the dissimilarity value between two given samples."""
 
     def __init__(self, sample_first, sample_second, method="rjsd"):
 
-        # Inputs:
-        # sample_first: first sample, 1D array of the optional shapes: (n_species,), (1,n_species), (n_species,1).
-        # sample_second: second sample, 1D array of the optional shapes: (n_species,), (1,n_species), (n_species,1).
-        # method: The type of the dissimilarity, optional values are: rjsd, jsd, Bray Curtis, Euclidean. Type: string.
-        #         Default: rjsd.
+        """Inputs:
+        sample_first: first sample, 1D array of the optional shapes: (n_species,), (1,n_species), (n_species,1).
+        sample_second: second sample, 1D array of the optional shapes: (n_species,), (1,n_species), (n_species,1).
+        method: The type of the dissimilarity, optional values are: rjsd, jsd, Bray Curtis, Euclidean. Type: string.
+                Default: rjsd."""
 
         self.method, self.sample_first, self.sample_second = self._validate_input(sample_first, sample_second, method)
         self.normalized_sample_first, self.normalized_sample_second = self.normalize()
@@ -38,17 +38,18 @@ class Dissimilarity:
 
 
     def normalize(self):
-        # Returns:
-        # normalized_sample_first, normalized_sample_second. The two normalized samples.
+        """This method normalizes the two samples.
+        Returns:
+        normalized_sample_first, normalized_sample_second. The two normalized samples."""
 
         normalized_sample_first = self.sample_first / np.sum(self.sample_first)
         normalized_sample_second = self.sample_second / np.sum(self.sample_second)
         return normalized_sample_first, normalized_sample_second
 
     def find_intersection(self):
-        # This method finds the shared non-zero indexes of the two samples.
-        # Returns:
-        # s: the set s with represent the intersected indexes.
+        """This method finds the shared non-zero indexes of the two samples.
+        Returns:
+        s: the set s with represent the intersected indexes."""
 
         nonzero_index_first = np.nonzero(self.normalized_sample_first)
         nonzero_index_second = np.nonzero(self.normalized_sample_second)
@@ -57,9 +58,9 @@ class Dissimilarity:
         return s
 
     def calculate_normalized_in_s(self):
-        # This method calculates the normalized samples inside s.
-        # Returns:
-        # normalized_sample_first_hat, normalized_sample_second_hat, z the normalized samples inside s and variable z.
+        """This method calculates the normalized samples inside s.
+        Returns:
+        normalized_sample_first_hat, normalized_sample_second_hat, z the normalized samples inside s and variable z."""
 
         normalized_sample_first_hat = self.normalized_sample_first[self.s] / np.sum(
             self.normalized_sample_first[self.s])
@@ -70,18 +71,18 @@ class Dissimilarity:
         return normalized_sample_first_hat, normalized_sample_second_hat, z
 
     def dkl(self, u_hat):
-        # This method calculates the Kulleback-Leibler divergence.
-        # Inputs:
-        # u_hat: 1D vector.
-        # Returns:
-        # dkl value.
+        """This method calculates the Kulleback-Leibler divergence.
+        Inputs:
+        u_hat: 1D vector.
+        Returns:
+        dkl value."""
 
         return np.sum(u_hat*np.log(u_hat/self.z))  # Calculate dkl
 
     def calculate_dissimilarity(self):
-        # This method calculates the dissimilarity value.
-        # Returns:
-        # dissimilarity value.
+        """This method calculates the dissimilarity value.
+        Returns:
+        dissimilarity value."""
 
         # Calculate dissimilarity
         if self.method == "rjsd":
@@ -93,8 +94,6 @@ class Dissimilarity:
                 dissimilarity = 0
             else:
                 dissimilarity = np.sqrt(sqrt_value)
-
-
             return dissimilarity
         elif self.method == "jsd":
             dissimilarity = (self.dkl(self.normalized_sample_first_hat) +

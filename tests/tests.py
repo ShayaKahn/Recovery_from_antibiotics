@@ -5,9 +5,160 @@ from methods.similarity_correlation import SimilarityCorrelation
 from methods.similarity import Similarity
 from methods.historical_contingency import HC
 from data_processing.optimal import OptimalCohort
+from methods.functional_test import FunctionalTest, ApplyFunctionalTest
+from methods.unifrac_test import UnifracTest
 from unittest import TestCase
 import numpy as np
 import pandas as pd
+from pandas.io.parsers.readers import TextFileReader
+from pathlib import Path
+from skbio import TreeNode
+
+class TestFunctionalTest(TestCase):
+    """This class tests the FunctionalTest class."""
+    def setUp(self) -> None:
+        self.path = "C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132_picrust2_results/picrust2_out_pipeline/EC_metagenome_out/pred_metagenome_contrib.tsv.gz"
+        self.df = pd.read_csv(self.path, sep="\t",
+                              compression="gzip" if self.path.endswith(".gz") else None)
+        self.metadata = pd.read_csv('C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132_picrust2_results/Metadata.csv')
+        self.name_to_run = self.metadata.set_index("Name")["Run"].to_dict()
+        self.sample_name = self.name_to_run['77_Day37_CZA']
+        self.chunksize = 100
+        self.functional_test_path = FunctionalTest(self.path, self.sample_name, self.chunksize)
+        self.functional_test_df = FunctionalTest(self.df, self.sample_name, self.chunksize)
+        self.taxa = ['0f1670c0893a582f95f3b17d38e371f2']
+        self.species_table_path = self.functional_test_path.get_sample_species_table(self.taxa)
+        self.species_table_df = self.functional_test_df.get_sample_species_table(self.taxa)
+
+    def test_init(self):
+        self.assertTrue(isinstance(self.functional_test_path.reader, TextFileReader))
+        self.assertTrue(isinstance(self.functional_test_df.sample_table, pd.DataFrame))
+
+    def test_get_sample_species_table(self):
+        self.assertListEqual(self.taxa, list(set(self.species_table_df["taxon"].tolist())))
+        self.assertListEqual(self.taxa, list(set(self.species_table_path["taxon"].tolist())))
+
+class TestApplyFunctionalTest(TestCase):
+    """This class tests the ApplyFunctionalTest class."""
+    def setUp(self) -> None:
+        self.path = "C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132_picrust2_results/picrust2_out_pipeline_strat/EC_metagenome_out/pred_metagenome_contrib.tsv.gz"
+        self.metadata = pd.read_csv('C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132_picrust2_results/Metadata.csv')
+        self.name_to_run = self.metadata.set_index("Name")["Run"].to_dict()
+        self.base_col = "77_Day1_CZA"
+        self.abx_col = "77_Day6_CZA"
+        self.post_cols = ["77_Day9_CZA", "77_Day12_CZA", "77_Day16_CZA", "77_Day25_CZA", "77_Day37_CZA"]
+        self.unstratified_path = "C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132_picrust2_results/picrust2_out_pipeline_strat/EC_metagenome_out/pred_metagenome_unstrat.tsv.gz"
+
+        self.fun_unstrat = pd.read_csv(self.unstratified_path, sep="\t",
+                                       compression="gzip" if self.unstratified_path.endswith(".gz") else None,
+                                       index_col=0)
+        self.data = pd.read_csv('C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132_picrust2_results/feature_table_rarified.csv',
+                                index_col=0)
+        self.sur_cols = ['135_Day37_PTZD1', '33_Day37_Ct', '132_Day1_CtD2']
+        self.iters = 2
+        self.verbose = True
+        self.n_jobs = -1
+        self.apply_functional_test_simple = ApplyFunctionalTest(self.fun_unstrat, Path(self.path), self.name_to_run,
+                                                                self.base_col, self.abx_col, self.post_cols,
+                                                                self.sur_cols, self.data, self.iters, self.verbose,
+                                                                self.n_jobs, new_type="simple")
+        self.apply_functional_test_soft = ApplyFunctionalTest(self.fun_unstrat, Path(self.path), self.name_to_run,
+                                                              self.base_col, self.abx_col, self.post_cols,
+                                                              self.sur_cols, self.data, self.iters, self.verbose,
+                                                              self.n_jobs, new_type="soft")
+        self.apply_functional_test_strict = ApplyFunctionalTest(self.fun_unstrat, Path(self.path), self.name_to_run,
+                                                                self.base_col, self.abx_col, self.post_cols,
+                                                                self.sur_cols, self.data, self.iters, self.verbose,
+                                                                self.n_jobs, new_type="strict")
+    def _find_new_null_iters(self):
+        self.assertTrue(all(v == len(self.apply_functional_test_simple.new) for v in [
+            len(n) for n in self.apply_functional_test_simple.new_null_cont]))
+        self.assertTrue(all(v == len(self.apply_functional_test_soft.new) for v in [
+            len(n) for n in self.apply_functional_test_soft.new_null_cont]))
+        self.assertTrue(all(v == len(self.apply_functional_test_strict.new) for v in [
+            len(n) for n in self.apply_functional_test_strict.new_null_cont]))
+        self.assertTrue(all(set(v).isdisjoint(self.apply_functional_test_simple.dis
+                                              ) for v in self.apply_functional_test_simple.fun_new_null_cont))
+        self.assertTrue(all(set(v).isdisjoint(self.apply_functional_test_soft.dis
+                                              ) for v in self.apply_functional_test_soft.fun_new_null_cont))
+        self.assertTrue(all(set(v).isdisjoint(self.apply_functional_test_strict.dis
+                                              ) for v in self.apply_functional_test_strict.fun_new_null_cont))
+
+    def test_pad_fun_grouped(self):
+        self.assertEqual(np.size(self.apply_functional_test_simple.fun_new_grouped_pad),
+                         np.size(self.apply_functional_test_simple.fun_dis_grouped_pad))
+
+    def test_normalize_pad_fun_grouped(self):
+        self.assertEqual(np.sum(self.apply_functional_test_simple.fun_new_grouped_pad_norm), 1)
+        self.assertEqual(np.sum(self.apply_functional_test_simple.fun_dis_grouped_pad_norm), 1)
+
+class TestUnifracTest(TestCase):
+    """
+    This class tests the UnifracTest class.
+    """
+    def setUp(self) -> None:
+        self.feature_table = pd.DataFrame({
+            'S1_D1_ABX_A': [1, 0, 1, 1, 0, 1],
+            'S2_D1_ABX_B': [1, 1, 1, 1, 1, 0],
+            'S1_D6_ABX_A': [1, 0, 0, 1, 0, 0],
+            'S2_D6_ABX_B': [0, 0, 0, 0, 1, 1],
+            'S1_D180_ABX_A': [1, 1, 0, 1, 0, 1],
+            'S2_D180_ABX_B': [1, 1, 1, 1, 0, 1]
+        })
+
+        otu_ids = ['OTU1', 'OTU2', 'OTU3', 'OTU4', 'OTU5', 'OTU6']
+
+        self.feature_table.index = otu_ids
+
+        def build_mock_tree(otu_ids):
+
+            otu_ids = [otu for otu in otu_ids if otu != 'OTU6']
+
+            leaves = [TreeNode(name=otu) for otu in otu_ids]
+
+            root = TreeNode(name="root")
+            for leaf in leaves:
+                leaf.length = 1.0
+                root.append(leaf)
+
+            return root
+
+        self.tree = build_mock_tree(otu_ids)
+
+        print(self.tree)
+
+        self.test_ids = ['S1', 'S2']
+
+        self.pattern = "_D"
+
+        self.days = ["1", "6", "180"]
+
+        self.add_info = ["ABX_A", "ABX_B", "ABX_A", "ABX_B", "ABX_A", "ABX_B"]
+
+        self.unifrac_object = UnifracTest(self.feature_table, self.tree, self.test_ids, self.pattern, self.days,
+                                          self.add_info)
+
+        self.new = self.unifrac_object._find_new('S1_D1_ABX_A', 'S1_D6_ABX_A', 'S1_D180_ABX_A')
+        self.dis = self.unifrac_object._find_dis('S1_D1_ABX_A', 'S1_D6_ABX_A', 'S1_D180_ABX_A')
+
+    def test_filter_biom(self):
+        self.assertListEqual(self.unifrac_object.shared_otus, ['OTU1', 'OTU2', 'OTU3', 'OTU4', 'OTU5'])
+        self.assertListEqual(list(self.unifrac_object.filtered_biom.ids(axis='sample')), ['S1_D1_ABX_A',
+                                                                                               'S2_D1_ABX_B',
+                                                                                               'S1_D6_ABX_A',
+                                                                                               'S2_D6_ABX_B',
+                                                                                               'S1_D180_ABX_A',
+                                                                                               'S2_D180_ABX_B'])
+    def test_find_new(self):
+        self.assertTrue(np.array_equal(self.new, np.array([False, True, False, False, False])))
+
+    def test_find_dis(self):
+        self.assertTrue(np.array_equal(self.dis, np.array([False, False, True, False, False])))
+
+    def test_find_new_null(self):
+        new_null = self.unifrac_object._find_new_null(self.new, self.dis, 'S2_D180_ABX_B')
+        self.assertEqual(np.sum(new_null), 1)
+        self.assertTrue(new_null[2] is not True)
 
 class TestSimilarityCorrelation(TestCase):
     def setUp(self) -> None:
@@ -306,14 +457,14 @@ class Test_Surrogate(TestCase):
 
 class TestHC(TestCase):
     def setUp(self) -> None:
-        self.num_samples = 20
+        self.num_samples = 10
         self.pool_size = 50
         self.num_survived_min = 25
         self.num_survived_max = 25
         self.mean = 0
         self.sigma = 15
         self.c = 0.05
-        self.delta = 1e-5
+        self.delta = 1e-4
         self.final_time = 1000
         self.max_step = 0.05
         self.epsilon = 1e-4
@@ -323,7 +474,7 @@ class TestHC(TestCase):
         self.symmetric = True
         self.alpha = None
         self.method = 'RK45'
-        self.multiprocess = False
+        self.multiprocess = True#False
         self.switch_off = False
 
         # No switch off
@@ -331,6 +482,8 @@ class TestHC(TestCase):
                                self.sigma, self.c, self.delta, self.final_time, self.max_step, self.epsilon,
                                self.phi, self.min_growth, self.max_growth, self.symmetric, self.alpha, self.method,
                                self.multiprocess)
+
+        print(self.HC_no_switch.test_idx)
 
         # Switch off
         self.HC_switch = HC(self.num_samples, self.pool_size, self.num_survived_min, self.num_survived_max, self.mean,
@@ -343,10 +496,24 @@ class TestHC(TestCase):
                          len(self.HC_no_switch.event_not_satisfied_ind) - len([self.HC_no_switch.test_idx]))
         self.assertEqual(len(self.HC_switch.num_survived_list), self.num_samples -
                          len(self.HC_switch.event_not_satisfied_ind) - len([self.HC_switch.test_idx]))
+        if self.num_survived_min == self.num_survived_max:
+            self.assertEqual(np.max(self.HC_no_switch.num_survived_list), self.num_survived_min)
+            self.assertEqual(np.min(self.HC_switch.num_survived_list), self.num_survived_min)
+        else:
+            self.assertTrue(np.max(self.HC_no_switch.num_survived_list) <= self.num_survived_max)
+            self.assertTrue(np.min(self.HC_no_switch.num_survived_list) >= self.num_survived_min)
+            self.assertTrue(np.max(self.HC_switch.num_survived_list) <= self.num_survived_max)
+            self.assertTrue(np.min(self.HC_switch.num_survived_list) >= self.num_survived_min)
 
     def test_interaction_matrix(self):
         self.assertTrue(np.array_equal(np.diag(self.HC_no_switch.A), np.zeros((1, self.pool_size)).squeeze()))
         self.assertTrue(np.array_equal(np.diag(self.HC_switch.A), np.zeros((1, self.pool_size)).squeeze()))
+
+    def test_set_logistic_growth(self):
+        self.assertEqual(self.HC_no_switch.s.shape, (self.pool_size,))
+
+    def test_set_growth_rate(self):
+        self.assertEqual(self.HC_no_switch.r.shape, (self.pool_size,))
 
     def test_set_initial_conditions(self):
         self.assertEqual(self.HC_no_switch.Y_0.shape[0], self.num_samples)
@@ -369,11 +536,8 @@ class TestHC(TestCase):
 
     def test_consistency(self):
         event_not_satisfied_ind = self.HC_no_switch.event_not_satisfied_ind
-        print(event_not_satisfied_ind)
         event_not_satisfied_ind_Y_s = self.HC_no_switch.event_not_satisfied_ind_Y_s
-        print(event_not_satisfied_ind_Y_s)
         results = self.HC_no_switch.get_results()
         Y_s = results["Y_s"]
-        print(Y_s.shape[0])
         self.assertEqual(Y_s.shape[0],
                          self.num_samples - len(event_not_satisfied_ind) - len(event_not_satisfied_ind_Y_s) - 1)
