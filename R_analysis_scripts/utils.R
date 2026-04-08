@@ -1,5 +1,6 @@
 library(ggplot2)
 library(ggridges)
+library(vegan)
 
 #' Volcano plot function
 #'
@@ -260,7 +261,7 @@ plot_recovery_trajectories <- function(coordinates, colors, shapes, m,
   return(p)}
 
 
-plot_knn_richness_test <- function(X_s_binary, X_n_binary, taxa_id = 1, k = 5,
+plot_knn_richness <- function(X_s_binary, X_n_binary, taxa_id = 1, k = 5,
                                    k_far = NULL, c = NULL, partial = TRUE,
                                    binary = TRUE, add = TRUE,
                                    point_col = "grey70",
@@ -448,10 +449,10 @@ plot_knn_richness_test <- function(X_s_binary, X_n_binary, taxa_id = 1, k = 5,
   fisher_label <- NULL
   
   if (!is.na(hi_col_idx_in_subset) && length(nn_idx) > 0 && length(far_idx) > 0) {
-    a <- sum(test_mask[nn_idx])                 # NN present
-    b <- length(nn_idx) - a                     # NN absent
-    c_ <- sum(test_mask[far_idx])               # FAR present
-    d <- length(far_idx) - c_                   # FAR absent
+    a <- sum(test_mask[nn_idx])                 
+    b <- length(nn_idx) - a                     
+    c_ <- sum(test_mask[far_idx])               
+    d <- length(far_idx) - c_                   
     
     fisher_table <- matrix(c(a, b, c_, d), nrow = 2, byrow = TRUE,
                            dimnames = list(Presence = c("Present", "Absent"),
@@ -470,6 +471,7 @@ plot_knn_richness_test <- function(X_s_binary, X_n_binary, taxa_id = 1, k = 5,
              col = NA,
              cex = cex_vec, lwd = 1.4)
     }
+   }
   }
   
   leg_txt <- c("Test sample", "k farthest", "k nearest", "Others",
@@ -488,15 +490,15 @@ plot_knn_richness_test <- function(X_s_binary, X_n_binary, taxa_id = 1, k = 5,
             length(multi_idx) > 0, any(test_mask_no_ref))
   
   if (legend && any(keep)) {
-    L <- legend(legend_pos, legend = leg_txt[keep], pt.bg  = leg_bg[keep],
+    L <- legend(legend_pos, legend = leg_txt[keep], pt.bg = leg_bg[keep],
                 col = leg_col[keep], pch = leg_pch[keep],
                 pt.cex = leg_cex[keep], cex = 1, bty = "n", x.intersp = 0.8,
-                y.intersp = 0.8) rect(L$rect$left, L$rect$top - L$rect$h,
-                                      L$rect$left + L$rect$w, L$rect$top,
-                                      border = "black", lwd = 1.6, col = NA,
-                                      xpd = NA)}
+                y.intersp = 0.8)
+    rect(L$rect$left, L$rect$top - L$rect$h, L$rect$left + L$rect$w, L$rect$top,
+         border = "black", lwd = 1.6, col = NA, xpd = NA)}
   
   invisible(list(nn_indices = nn_idx, nn_distances = d_all[nn_idx],
                  far_indices = far_idx, far_distances = d_all[far_idx],
                  scores = sc, model = fit, fisher_table = fisher_table,
-                 fisher_result = fisher_res))}
+                 fisher_result = fisher_res))
+}
