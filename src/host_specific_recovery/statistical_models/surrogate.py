@@ -1,5 +1,5 @@
-from methods.similarity import Similarity
-from data_processing.optimal import OptimalCohort
+from src.host_specific_recovery.metrics.similarity import Similarity
+from src.host_specific_recovery.data_processing.optimal import OptimalCohort
 import numpy as np
 import operator
 

@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 import operator
-import random
-from methods.similarity import Similarity
+from src.host_specific_recovery.metrics.similarity import Similarity
 from joblib import Parallel, delayed
 from cython_modules.similarity_correlation_functions import _create_synthetic_cohort
 

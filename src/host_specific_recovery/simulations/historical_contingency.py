@@ -1,5 +1,5 @@
 import numpy as np
-from methods.glv import Glv
+from src.host_specific_recovery.simulations.glv import Glv
 import random
 import networkx as nx
 from scipy.stats import powerlaw
@@ -113,7 +113,7 @@ class HC:
         if not isinstance(method, str):
             raise ValueError("method must be of type str.")
         if method not in ['RK45', 'BDF', 'RK23', 'Radau', 'LSODA', 'DOP853']:
-            raise ValueError("method must be one of the following methods: RK45, BDF, RK23, Radau, LSODA, and DOP853")
+            raise ValueError("method must be one of the following src: RK45, BDF, RK23, Radau, LSODA, and DOP853")
         if not (isinstance(c, float) and 0 < c < 1):
             raise ValueError("c must be float in the interval [0, 1].")
         if not (isinstance(eta, float)) or (not (0 < eta < 1)):

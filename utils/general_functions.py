@@ -1,7 +1,7 @@
 import operator
 import numpy as np
 from skbio.diversity import beta_diversity
-from methods.similarity import Similarity
+from src.host_specific_recovery.metrics.similarity import Similarity
 import random
 
 def subset(post_matrix, base_sample, ABX_sample, strict, new):

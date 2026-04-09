@@ -32,7 +32,7 @@ The null model is implemented in the `null_model.py` script.
 #### Usage Example
 
 ```python
-from methods.null_model import NullModel
+from src.host_specific_recovery.statistical_models.null_model import NullModel
 import numpy as np
 
 # Define the input data
@@ -64,7 +64,7 @@ The surrogate data analysis is implemented in the `surrogate.py` script.
 #### Usage Example
 
 ```python
-from methods.surrogate import Surrogate
+from src.host_specific_recovery.statistical_models.surrogate import Surrogate
 import numpy as np
 
 # Define the input data
@@ -88,7 +88,7 @@ test_abx_sample = np.array([[1, 1, 0, 0, 0, 0, 0, 1]])
 timepoints = 1
 
 # Calculate the results
-SU = Surrogate(base_samples_collections, test_base_samples_collection, test_post_abx_matrix, 
+SU = Surrogate(base_samples_collections, test_base_samples_collection, test_post_abx_matrix,
                test_abx_sample, timepoints=timepoints)
 results = SU.apply_surrogate_data_analysis()
 ```
@@ -102,7 +102,7 @@ The analysis is implemented in the `similarity_correlation.py` script.
 #### Usage Example
 
 ```python
-from methods.similarity_correlation import SimilarityCorrelation
+from src.host_specific_recovery.statistical_models.similarity_correlation import SimilarityCorrelation
 import numpy as np
 import pandas as pd
 
@@ -120,19 +120,19 @@ base = np.array([[1, 1, 0, 1, 1, 0, 1, 0, 1, 0],
 post_ABX_container = {"A": np.array([[1, 0, 0, 1, 0, 0, 1, 0, 0, 0],
                                      [1, 1, 0, 1, 1, 0, 1, 0, 1, 0],
                                      [0, 1, 1, 1, 1, 0, 1, 0, 1, 0]]),
-                     "B": np.array([[1, 0, 1, 0, 0, 0, 0, 0, 1, 0],
-                                    [1, 1, 1, 0, 0, 0, 0, 0, 0, 1],
-                                    [1, 1, 1, 1, 1, 1, 0, 0, 1, 1]]),
-                     "C": np.array([[0, 1, 0, 0, 0, 0, 0, 1, 1, 1],
-                                    [0, 1, 0, 1, 0, 1, 0, 1, 1, 1],
-                                    [0, 1, 0, 1, 1, 1, 0, 1, 1, 1]]),
-                     "D": np.array([[1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
-                                    [0, 1, 1, 1, 0, 0, 0, 0, 1, 1],
-                                    [1, 1, 1, 0, 0, 1, 0, 1, 1, 1]]),
-                     "E": np.array([[1, 0, 1, 0, 1, 1, 0, 0, 1, 0],
-                                    [1, 1, 1, 0, 1, 1, 0, 0, 1, 1],
-                                    [0, 1, 1, 0, 1, 1, 0, 1, 1, 1]])
-                     }
+                      "B": np.array([[1, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+                                     [1, 1, 1, 0, 0, 0, 0, 0, 0, 1],
+                                     [1, 1, 1, 1, 1, 1, 0, 0, 1, 1]]),
+                      "C": np.array([[0, 1, 0, 0, 0, 0, 0, 1, 1, 1],
+                                     [0, 1, 0, 1, 0, 1, 0, 1, 1, 1],
+                                     [0, 1, 0, 1, 1, 1, 0, 1, 1, 1]]),
+                      "D": np.array([[1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+                                     [0, 1, 1, 1, 0, 0, 0, 0, 1, 1],
+                                     [1, 1, 1, 0, 0, 1, 0, 1, 1, 1]]),
+                      "E": np.array([[1, 0, 1, 0, 1, 1, 0, 0, 1, 0],
+                                     [1, 1, 1, 0, 1, 1, 0, 0, 1, 1],
+                                     [0, 1, 1, 0, 1, 1, 0, 1, 1, 1]])
+                      }
 keys_ref = ["A", "B", "C", "D", "E", "F", "G"]
 base_others = np.array([[1, 1, 1, 1, 1, 0, 1, 1, 1, 0],
                         [1, 1, 1, 1, 1, 1, 0, 0, 0, 0]])
@@ -156,7 +156,7 @@ The Historical contingency analysis is implemented in the `historical_contingenc
 #### Usage Example
 
 ```python
-from methods.historical_contingency import HC
+from src.host_specific_recovery.simulations.historical_contingency import HC
 
 # Define the parameters
 num_samples = 20

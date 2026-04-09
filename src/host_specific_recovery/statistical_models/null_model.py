@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial.distance import braycurtis, jensenshannon
-from methods.similarity import Similarity
+from src.host_specific_recovery.metrics.similarity import Similarity
 from skbio.diversity import beta_diversity
 from cython_modules.null_model_functions import generate_samples
 import operator

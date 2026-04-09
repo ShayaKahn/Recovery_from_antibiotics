@@ -1,12 +1,12 @@
-from methods.null_model import NullModel
-from data_processing.rarify import Rarify
-from methods.surrogate import Surrogate
-from methods.similarity_correlation import SimilarityCorrelation
-from methods.similarity import Similarity
-from methods.historical_contingency import HC
-from data_processing.optimal import OptimalCohort
-from methods.functional_test import FunctionalTest, ApplyFunctionalTest
-from methods.unifrac_test import UnifracTest
+from src.host_specific_recovery.statistical_models.null_model import NullModel
+from src.host_specific_recovery.data_processing.rarify import Rarify
+from src.host_specific_recovery.statistical_models.surrogate import Surrogate
+from src.host_specific_recovery.statistical_models.similarity_correlation import SimilarityCorrelation
+from src.host_specific_recovery.metrics.similarity import Similarity
+from src.host_specific_recovery.simulations.historical_contingency import HC
+from src.host_specific_recovery.data_processing.optimal import OptimalCohort
+from src.host_specific_recovery.statistical_models.functional_test import FunctionalTest, ApplyFunctionalTest
+from src.host_specific_recovery.statistical_models.unifrac_test import UnifracTest
 from unittest import TestCase
 import numpy as np
 import pandas as pd
