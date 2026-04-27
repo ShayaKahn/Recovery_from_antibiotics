@@ -57,3 +57,36 @@ def run_assembly_times_analysis(dataset: dict, timepoint_threshold:int, strict: 
         "returned_counts": returned_counts,
         "contingency_tables": contingency_tables
     }
+
+def calculate_characteristic_time(dataset, times):
+    """
+    This function calculates the characteristic times for returned and new species for each subject.
+    :param dataset: dictionary containing the dataset information/
+    :param times: NumPy vector of time points
+    :return: returned_characteristic_time_dict, new_characteristic_time_dict
+    """
+
+    def characteristic_time(prop_array, times):
+        average_times = np.array([(times[i] + times[i + 1]) / 2 for i in range(len(times) - 1)])
+        return np.dot(prop_array, average_times)
+
+    baseline_cohort = dataset["baseline"]
+    ABX_cohort = dataset["abx"]
+    ids = dataset["filtered_keys"]
+    post_ABX_tensor = np.stack(dataset["post_abx_cohorts"], axis=1)
+    returned_characteristic_time_dict = {}
+    new_characteristic_time_dict = {}
+    for i in range(len(ids)):
+        new_species = subset(post_ABX_tensor[i, ...], baseline_cohort[i, :], ABX_cohort[i, :], True, new=True)
+        new_counts = np.array(new_species).sum(axis=1)
+        new_props = new_counts / np.sum(new_counts)
+        returned_species = subset(post_ABX_tensor[i, ...], baseline_cohort[i, :], ABX_cohort[i, :], True, new=False)
+        returned_counts = np.array(returned_species).sum(axis=1)
+        returned_props = returned_counts / np.sum(returned_counts)
+        returned_characteristic_time_dict[ids[i]] = characteristic_time(returned_props.reshape(1, -1), times)
+        new_characteristic_time_dict[ids[i]] = characteristic_time(new_props.reshape(1, -1), times)
+    return {
+        "returned_characteristic_time_dict": returned_characteristic_time_dict,
+        "new_characteristic_time_dict": new_characteristic_time_dict,
+        "keys": ids
+    }

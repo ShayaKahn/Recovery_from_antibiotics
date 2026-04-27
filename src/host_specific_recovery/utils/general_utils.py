@@ -1,5 +1,6 @@
 import numpy as np
 import operator
+from statsmodels.stats.multitest import multipletests
 
 def subset(post_matrix, base_sample, ABX_sample, strict, new):
     num_timepoints = post_matrix.shape[0]
@@ -30,3 +31,33 @@ def subset(post_matrix, base_sample, ABX_sample, strict, new):
                 # update the operators list.
                 op_lst[j] = operator.eq
     return timepoints_vals
+
+def benjamini_hochberg(pvals):
+    pvals = np.asarray(pvals, dtype=float)
+    _, pvals_adj, _, _ = multipletests(pvals, alpha=0.05, method='fdr_bh')
+    return pvals_adj
+
+def p_to_label(p, z):
+    if p <= 0.001:
+        stars = '***'
+    elif p <= 0.01:
+        stars = '**'
+    elif p <= 0.05:
+        stars = '*'
+    else:
+        return 'ns'
+
+    symbol = '*' if z > 0 else '#'
+
+    return '\n'.join(symbol for _ in stars)
+
+def p_to_label_one_sided(p):
+    if p <= 0.001:
+        stars = '***'
+    elif p <= 0.01:
+        stars = '**'
+    elif p <= 0.05:
+        stars = '*'
+    else:
+        return 'ns'
+    return '\n'.join(list(stars))
