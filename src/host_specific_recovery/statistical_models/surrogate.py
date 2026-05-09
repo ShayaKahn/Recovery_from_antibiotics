@@ -54,7 +54,6 @@ class Surrogate:
             opt = OptimalCohort(test_base_sample, method='jaccard', norm=False)
             _, chosen_indices = opt.get_optimal_samples()
             test_key, chosen_index = next(iter(chosen_indices.items()))
-            print(test_base_sample[test_key][chosen_index, :])
             test_base_smp = test_base_sample[test_key][chosen_index, :]
         # Check if the key is a string and the value is a numpy array.
         if not (isinstance(test_key, str) and isinstance(test_base_smp, np.ndarray)):
@@ -129,9 +128,6 @@ class Surrogate:
         # calculate results using Similarity class
         results = {}
         # Calculate unweighted specificity/ recovery
-        print(f"Size base: {np.size(np.nonzero(self.test_base_sample[self.subset]))}.")
-        print(f"Size post ABX: {np.size(np.nonzero(self.test_post_ABX_sample[self.subset]))}.")
-        print(" ")
         measure = Similarity(self.test_base_sample[self.subset], self.test_post_ABX_sample[self.subset],
                              method=method, norm=True).calculate_similarity()
         # store the results of the test subject
@@ -139,7 +135,6 @@ class Surrogate:
         for key in self.base_samples_collections.keys():
             sur = self.base_samples_collections[key]
             if np.squeeze(sur).ndim == 1:
-                print(f"Size base {key}: {np.size(np.nonzero(np.squeeze(self.base_samples_collections[key])[self.subset]))}.")
                 measure_surrogate = Similarity(np.squeeze(self.base_samples_collections[key])[self.subset],
                                                self.test_post_ABX_sample[self.subset],
                                                method=method, norm=True).calculate_similarity()

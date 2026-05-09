@@ -6,6 +6,9 @@ import pickle
 
 def save_sda_results(outputs: dict, base_dir: str | Path) -> None:
 
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+
     similarities = []
     for d in outputs["results"]:
         sims = list(d.values())
@@ -29,11 +32,50 @@ def save_sda_results(outputs: dict, base_dir: str | Path) -> None:
             similarities_naive.append(s)
 
     np.save(base_dir / "similarities_naive.npy", similarities_naive)
-
     np.save(base_dir / "ranks.npy", np.array(outputs["ranks"]))
     np.save(base_dir / "ranks_mid.npy", np.array(outputs["ranks_mid"]))
     np.save(base_dir / "ranks_naive.npy", np.array(outputs["ranks_naive"]))
 
+
+def save_sda_plot_results(results_sda_plot: dict, base_dir: str | Path) -> None:
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    figure = results_sda_plot.get("figure")
+    if figure is not None:
+        figure.savefig(base_dir / "sda_plot.png", dpi=300, bbox_inches="tight", facecolor="white")
+
+    np.save(base_dir / "order.npy", np.asarray(results_sda_plot["order"]))
+    np.save(base_dir / "obs_sorted.npy", np.asarray(results_sda_plot["obs_sorted"], dtype=float))
+    np.save(base_dir / "surr_sorted.npy", np.asarray(results_sda_plot["surr_sorted"], dtype=object))
+    np.save(base_dir / "pvals_adj_sorted.npy", np.asarray(results_sda_plot["pvals_adj_sorted"], dtype=float))
+    np.save(base_dir / "pvals_labels_sorted.npy", np.asarray(results_sda_plot["pvals_labels_sorted"], dtype=str))
+
+def save_binomial_test_results(outputs: dict, base_dir: str | Path) -> None:
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    confidence_interval = outputs["confidence_interval"]
+    confidence_interval_values = np.array(
+        [confidence_interval.low, confidence_interval.high],
+        dtype=float
+    )
+
+    np.save(base_dir / "binomial_test_p_value.npy", np.array(outputs["p_value"], dtype=float))
+    np.save(base_dir / "binomial_test_confidence_interval.npy", confidence_interval_values)
+    np.save(base_dir / "binomial_test_interval_null.npy", np.asarray(outputs["interval_null"], dtype=float))
+
+    with open(base_dir / "binomial_test_results.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["p_value", "confidence_interval_low", "confidence_interval_high",
+                         "interval_null_low", "interval_null_high"])
+        writer.writerow([
+            outputs["p_value"],
+            confidence_interval.low,
+            confidence_interval.high,
+            outputs["interval_null"][0],
+            outputs["interval_null"][1]
+        ])
 
 def save_nm_results(outputs: dict, base_dir: str | Path) -> None:
 

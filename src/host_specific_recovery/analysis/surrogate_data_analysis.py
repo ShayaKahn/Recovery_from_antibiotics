@@ -58,8 +58,8 @@ def run_surrogate_analysis(dataset: dict, timepoints_val:int,  method: str = "Ja
         sim_mid.append(res_mid[specific_key])
         sim_naive.append(res_naive[specific_key])
         sim_others.append([res[key] for key in keys if key != specific_key])
-        sim_others_mid.append([res[key] for key in keys if key != specific_key])
-        sim_others_naive.append([res[key] for key in keys if key != specific_key])
+        sim_others_mid.append([res_mid[key] for key in keys if key != specific_key])
+        sim_others_naive.append([res_naive[key] for key in keys if key != specific_key])
 
     # calculate the ranks
     ranks = np.array([len(keys) - np.sum((sim_val > sim_val_others)
@@ -91,7 +91,7 @@ def run_binomial_test(surrogate_outputs, alpha=0.9):
 
     n_subjects = len(surrogate_outputs["ranks"])
     n_success = (surrogate_outputs["ranks"] == 1).sum()
-    prob_null = 1 / (len(surrogate_outputs["sim_others"]) + 1)
+    prob_null = 1 / (len(surrogate_outputs["similarity_others"][0]) + 1)
 
     def binomial_test(n, k, p):
         result = binomtest(k, n, p, alternative='greater')
@@ -106,5 +106,5 @@ def run_binomial_test(surrogate_outputs, alpha=0.9):
     return {
         "p_value": p,
         "confidence_interval": ci,
-        "interval_null": interval_null
+        "interval_null": interval_null,
     }

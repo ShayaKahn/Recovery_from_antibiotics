@@ -186,7 +186,33 @@ results = H.get_results()
 ```
 
 ## Installation
-Clone the project repository:
-  ```sh
-  git clone https://github.com/ShayaKahn/Recovery_from_antibiotics
-  
+Clone the project repository and install the required dependencies:
+
+```sh
+git clone https://github.com/ShayaKahn/Recovery_from_antibiotics
+cd Recovery_from_antibiotics
+python -m venv .venv
+```
+
+Activate the virtual environment:
+
+```sh
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+
+# macOS/Linux
+source .venv/bin/activate
+```
+
+Install the Python dependencies:
+
+```sh
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+To run the test suite:
+
+```sh
+python -m unittest discover tests
+```

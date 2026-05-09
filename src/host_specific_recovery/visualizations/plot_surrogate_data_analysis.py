@@ -114,10 +114,20 @@ def plot_SDA(outputs, fig_size, sur_color, real_color, show_y=True, legend=True,
         plt.savefig(dir, dpi=300, bbox_inches='tight', facecolor='white')
     else:
         plt.show()
-    return fig, ax, order, obs_sorted, surr_sorted, pvals_adj_sorted, pvals_labels
+    return {
+        "figure": fig,
+        "axis": ax,
+        "order": order,
+        "obs_sorted": obs_sorted,
+        "surr_sorted": surr_sorted,
+        "pvals_adj": pvals_adj,
+        "pvals_labels": pvals_labels,
+        "pvals_adj_sorted": pvals_adj_sorted,
+        "pvals_labels_sorted": pvals_labels_sorted
+    }
 
-def plot_SDA_slow(outputs, significance, fig_size, sur_color, real_color, show_y=True, legend=True, ymin=None,
-                  ymax=None, dir=None):
+def plot_SDA_slow(outputs, significance, fig_size, sur_color, real_color, show_y=True,
+                  legend=True, ymin=None, ymax=None, dir=None):
     """
     Plot SDA results.
     :param outputs: surrogate data analysis outputs dictionary
@@ -232,7 +242,17 @@ def plot_SDA_slow(outputs, significance, fig_size, sur_color, real_color, show_y
     else:
         plt.show()
 
-    return fig, ax, order, obs_sorted, surr_sorted, pvals_adj_sorted, pvals_labels_sorted
+    return {
+        "figure": fig,
+        "axis": ax,
+        "order": order,
+        "obs_sorted": obs_sorted,
+        "surr_sorted": surr_sorted,
+        "pvals_adj": pvals_adj,
+        "pvals_labels": pvals_labels,
+        "pvals_adj_sorted": pvals_adj_sorted,
+        "pvals_labels_sorted": pvals_labels_sorted
+    }
 
 def plot_binomial_tests(tests, path=None):
     """
@@ -307,7 +327,6 @@ def plot_binomial_tests(tests, path=None):
 
     if path:
         fig.savefig(path, dpi=300)
-        plt.close(fig)
-        return None
+    else:
+        fig.show()
 
-    return fig

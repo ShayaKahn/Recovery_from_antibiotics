@@ -1,9 +1,6 @@
 from src.host_specific_recovery.io.common import *
 from typing import Dict, List
 
-rel_abund_rarefied = pd.read_csv(r"C:\Users\USER\OneDrive\Desktop\Antibiotics\Recovery\Data\annotated.mOTU.rel_abund.rarefied.tsv",
-                                 sep='\t')
-
 def normalize_cohort(cohort):
     # normalization function
     if cohort.ndim == 1:
@@ -23,7 +20,7 @@ def _build_baseline_columns() -> List[str]:
     return ['ERAS1_Dag0', 'ERAS2_Dag0', 'ERAS3_Dag0', 'ERAS4_Dag0', 'ERAS5_Dag0', 'ERAS6_Dag0', 'ERAS7_Dag0',
             'ERAS8_Dag0', 'ERAS9_Dag0', 'ERAS10_Dag0', 'ERAS11_Dag0', 'ERAS12_Dag0']
 
-def _baseline_columns_appear_4() -> List[str]:
+def _build_baseline_columns_appear_4() -> List[str]:
     return ['ERAS2_Dag0', 'ERAS3_Dag0', 'ERAS4_Dag0', 'ERAS5_Dag0', 'ERAS6_Dag0', 'ERAS7_Dag0', 'ERAS9_Dag0',
             'ERAS11_Dag0', 'ERAS12_Dag0']
 
@@ -55,13 +52,14 @@ def _build_columns_180_appear_4() -> List[str]:
     return ['ERAS2_Dag180', 'ERAS3_Dag180', 'ERAS4_Dag180', 'ERAS5_Dag180', 'ERAS6_Dag180', 'ERAS7_Dag180',
             'ERAS9_Dag180', 'ERAS11_Dag180', 'ERAS12_Dag180']
 
-def load_Pallega_et_al_data() -> Dict[str, Optional[object]]:
+def load_Palleja_et_al_data() -> Dict[str, Optional[object]]:
 
     # load data
     rel_abund_rarefied = load_csv_df(
         r"C:\Users\USER\OneDrive\Desktop\Antibiotics\Recovery\Data\annotated.mOTU.rel_abund.rarefied.tsv",
         sep='\t')
     baseline_columns = _build_baseline_columns()
+    baseline_columns_appear_4 = _build_baseline_columns_appear_4()
     columns_4 = _build_columns_4()
     columns_8 = _build_columns_8()
     columns_8_appear_4 = _build_columns_8_appear_4()
@@ -70,15 +68,15 @@ def load_Pallega_et_al_data() -> Dict[str, Optional[object]]:
     columns_180 = _build_columns_180()
     columns_180_appear_4 = _build_columns_180_appear_4()
 
-    baseline_full = transpose_numeric(rel_abund_rarefied[baseline_columns], norm=False)
-    baseline_filtered = transpose_numeric(rel_abund_rarefied[baseline_columns], norm=True)
+    baseline_full = transpose_numeric(rel_abund_rarefied[baseline_columns], norm=True)
+    baseline_filtered = transpose_numeric(rel_abund_rarefied[baseline_columns_appear_4], norm=True)
     ABX_filtered = transpose_numeric(rel_abund_rarefied[columns_4], norm=True)
-    post_ABX_8_filtered = transpose_numeric(rel_abund_rarefied[columns_8], norm=True)
-    post_ABX_8_appear_4_filtered = transpose_numeric(rel_abund_rarefied[columns_8_appear_4], norm=True)
-    post_ABX_42_filtered = transpose_numeric(rel_abund_rarefied[columns_42], norm=True)
-    post_ABX_42_appear_4_filtered = transpose_numeric(rel_abund_rarefied[columns_42_appear_4], norm=True)
-    post_ABX_filtered = transpose_numeric(rel_abund_rarefied[columns_180], norm=True)
-    post_ABX_appear_4_filtered = transpose_numeric(rel_abund_rarefied[columns_180_appear_4], norm=True)
+    post_ABX_8_full = transpose_numeric(rel_abund_rarefied[columns_8], norm=True)
+    post_ABX_8_appear_4 = transpose_numeric(rel_abund_rarefied[columns_8_appear_4], norm=True)
+    post_ABX_42_full = transpose_numeric(rel_abund_rarefied[columns_42], norm=True)
+    post_ABX_42_appear_4 = transpose_numeric(rel_abund_rarefied[columns_42_appear_4], norm=True)
+    post_ABX_180_full = transpose_numeric(rel_abund_rarefied[columns_180], norm=True)
+    post_ABX_180_appear_4 = transpose_numeric(rel_abund_rarefied[columns_180_appear_4], norm=True)
 
     keys = _build_keys()
     filtered_keys = _build_filtered_keys()
@@ -89,18 +87,17 @@ def load_Pallega_et_al_data() -> Dict[str, Optional[object]]:
     return {
         "baseline_full": baseline_full,
         "baseline": baseline_filtered,
-        "post_abx": post_ABX_filtered,
-        "post_abx_8": post_ABX_8_filtered,
-        "post_abx_8_appear_4": post_ABX_8_appear_4_filtered,
-        "post_abx_42": post_ABX_42_filtered,
-        "post_abx_42_appear_4": post_ABX_42_appear_4_filtered,
+        "post_abx_full": post_ABX_180_full,
+        "post_abx_8_full": post_ABX_8_full,
+        "post_abx_8_appear_4": post_ABX_8_appear_4,
+        "post_abx_42_full": post_ABX_42_full,
+        "post_abx_42_appear_4": post_ABX_42_appear_4,
         "abx": ABX_filtered,
-        "abx_4": post_ABX_appear_4_filtered,
 
         "post_abx_cohorts": [
-            post_ABX_8_appear_4_filtered,
-            post_ABX_42_appear_4_filtered,
-            post_ABX_appear_4_filtered
+            post_ABX_8_appear_4,
+            post_ABX_42_appear_4,
+            post_ABX_180_appear_4
         ],
 
         "keys": keys,
