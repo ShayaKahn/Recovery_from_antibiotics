@@ -58,13 +58,14 @@ def run_assembly_times_analysis(dataset: dict, timepoint_threshold:int, strict: 
         "contingency_tables": contingency_tables
     }
 
-def calculate_characteristic_time(dataset, times):
+def calculate_characteristic_time(dataset):
     """
     This function calculates the characteristic times for returned and new species for each subject.
     :param dataset: dictionary containing the dataset information/
-    :param times: NumPy vector of time points
     :return: returned_characteristic_time_dict, new_characteristic_time_dict
     """
+
+    times = np.insert(np.array(dataset["times_post_abx"]), 0, 0)
 
     def characteristic_time(prop_array, times):
         average_times = np.array([(times[i] + times[i + 1]) / 2 for i in range(len(times) - 1)])

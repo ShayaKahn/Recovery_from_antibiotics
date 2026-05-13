@@ -67,6 +67,8 @@ def load_Sewunet_et_al_data() -> Dict[str, Optional[object]]:
     keys = list_to_numpy(keys)
     filtered_keys = list_to_numpy(filtered_keys)
 
+    times_post_abx = [4, 11, 80, 170]
+
     return {
         "abundance_table": data,
 
@@ -84,6 +86,8 @@ def load_Sewunet_et_al_data() -> Dict[str, Optional[object]]:
             post_ABX_21_filtered,
             post_ABX_90_filtered,
             post_ABX_filtered],
+
+        "times_post_abx": times_post_abx,
 
         "keys": keys,
         "filtered_keys": filtered_keys

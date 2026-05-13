@@ -1,0 +1,8 @@
+from src.host_specific_recovery.io.Palleja_et_al_loader import load_Palleja_et_al_data
+from src.host_specific_recovery.analysis.weighted_unweighted_similarity_analysis import run_similarity_analysis
+from src.host_specific_recovery.visualizations.plot_weighted_unweighted_similarity_analysis import plot_similarity_analysis
+
+dataset = load_Palleja_et_al_data()
+results_sim = run_similarity_analysis(dataset)
+
+plot_similarity_analysis(results_sim)

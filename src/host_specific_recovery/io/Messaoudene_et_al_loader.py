@@ -48,6 +48,8 @@ def load_Messaoudene_et_al_data(
     post_ABX_25_numpy = transpose_numeric(df_post_ABX_25, norm=True)
     post_ABX_numpy = transpose_numeric(df_post_ABX, norm=True)
 
+    times_post_abx = [4, 7, 11, 20, 32]
+
     return {
         "data": data,
         "baseline_full_df": baseline_full,
@@ -78,7 +80,8 @@ def load_Messaoudene_et_al_data(
             post_ABX_16_numpy,
             post_ABX_25_numpy,
             post_ABX_numpy
-        ]
+        ],
+        "times_post_abx": times_post_abx
     }
 
 def load_Messaoudene_et_al_functional_data() -> Dict[str, Optional[object]]:

@@ -1,13 +1,16 @@
 import matplotlib.pyplot as plt
-
+import numpy as np
 
 def plot_survived_species_analysis(outputs, x_vals, x_labels, dir=None):
-    results_matrix = 10 ** outputs["results_matrix"]
+    results_matrix = np.array(10 ** outputs["results_matrix"])
     mean = 10 ** outputs["mean"]
 
     fig, ax = plt.subplots(figsize=(25, 25))
 
+    print(results_matrix)
+
     for row in results_matrix:
+
         ax.plot(x_vals, row[0:-1], linewidth=15, color='#7f7f7f')
 
         ax.plot(x_vals, mean[0:-1], linewidth=30, color='black')
@@ -32,7 +35,7 @@ def plot_survived_species_analysis(outputs, x_vals, x_labels, dir=None):
         fig.patch.set_facecolor('white')
         fig.tight_layout()
 
-        if dir is not None:
-            plt.savefig(dir, dpi=300, bbox_inches='tight', facecolor='white')
-        else:
-            plt.show()
+    if dir is not None:
+        plt.savefig(dir, dpi=300, bbox_inches='tight', facecolor='white')
+    else:
+        plt.show()

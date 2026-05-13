@@ -84,6 +84,8 @@ def load_Palleja_et_al_data() -> Dict[str, Optional[object]]:
     keys = list_to_numpy(keys)
     filtered_keys = list_to_numpy(filtered_keys)
 
+    times_post_abx = [4, 38, 176]
+
     return {
         "baseline_full": baseline_full,
         "baseline": baseline_filtered,
@@ -99,6 +101,7 @@ def load_Palleja_et_al_data() -> Dict[str, Optional[object]]:
             post_ABX_42_appear_4,
             post_ABX_180_appear_4
         ],
+        "times_post_abx": times_post_abx,
 
         "keys": keys,
         "filtered_keys": filtered_keys

@@ -1,0 +1,7 @@
+from src.host_specific_recovery.io.Sewunet_et_al_loader import load_Sewunet_et_al_data
+from src.host_specific_recovery.analysis.species_classification_analysis import run_species_classification_analysis
+from src.host_specific_recovery.visualizations.plot_probability_correlation import plot_probability_correlation
+
+dataset = load_Sewunet_et_al_data()
+prob_df = run_species_classification_analysis(dataset)
+plot_probability_correlation(prob_df, min_counts=13, min_counts_ret=1)
