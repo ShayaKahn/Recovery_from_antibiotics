@@ -6,8 +6,8 @@ def _build_filtered_keys() -> List[str]:
     return ["10", "18", "40", "57", "65", "77", "85", "108", "123", "5117", "15", "51", "72", "93", "105",
             "112", "122", "25", "38", "52", "67", "78", "89", "107", "118", "125", "140"]
 
-def load_Messaoudene_et_al_data(
-        dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132/Data_csv") -> Dict[str, Optional[object]]:
+def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132/Data_csv"
+                                ) -> Dict[str, Optional[object]]:
 
     # load data
     data = load_csv_df(os.path.join(dir, 'full_ASV_table.csv'), index_col=0)
@@ -50,6 +50,46 @@ def load_Messaoudene_et_al_data(
 
     times_post_abx = [4, 7, 11, 20, 32]
 
+    # Control subjects
+    def sort_lst(lst):
+        return sorted(lst, key=lambda s: int(s.split('_', 1)[0]))
+
+    def remove_prefix_numbers(items, numbers):
+        prefixes = tuple(f"{int(n)}_" for n in numbers)
+        return [x for x in items if not (isinstance(x, str) and x.startswith(prefixes))]
+
+    cols_all = list(data.columns)
+    cols_control = remove_prefix_numbers(sort_lst([s for s in cols_all if isinstance(s,
+                                                                                     str) and s.lower().endswith(
+        "_ct")]),
+                                         ["83", "87"])
+    cols_control_base = remove_prefix_numbers(([s for s in cols_control if "Day1_" in s]), ["83", "87"])
+    cols_control_ABX3 = remove_prefix_numbers(sort_lst([s for s in cols_control if "Day3_" in s]), ["83", "87"])
+    cols_control_ABX = remove_prefix_numbers(sort_lst([s for s in cols_control if "Day6_" in s]), ["83", "87"])
+    cols_control_9 = remove_prefix_numbers(sort_lst([s for s in cols_control if "Day9_" in s]), ["83", "87"])
+    cols_control_12 = remove_prefix_numbers(sort_lst([s for s in cols_control if "Day12_" in s]), ["83", "87"])
+    cols_control_16 = remove_prefix_numbers(sort_lst([s for s in cols_control if "Day16_" in s]), ["83", "87"])
+    cols_control_25 = remove_prefix_numbers(sort_lst([s for s in cols_control if "Day25_" in s]), ["83", "87"])
+    cols_control_post = remove_prefix_numbers(sort_lst([s for s in cols_control if "Day37_" in s]), ["83", "87"])
+
+    base_control = data[cols_control_base]
+    ABX3_control = data[cols_control_ABX3]
+    ABX_control = data[cols_control_ABX]
+    post_9_control = data[cols_control_9]
+    post_12_control = data[cols_control_12]
+    post_16_control = data[cols_control_16]
+    post_25_control = data[cols_control_25]
+    post_control = data[cols_control_post]
+
+    base_control_numpy = base_control.div(base_control.sum(axis=0), axis=1).to_numpy().T
+    ABX3_control_numpy = ABX3_control.div(ABX3_control.sum(axis=0), axis=1).to_numpy().T
+    ABX_control_numpy = ABX_control.div(ABX_control.sum(axis=0), axis=1).to_numpy().T
+    post_9_control_numpy = post_9_control.div(post_9_control.sum(axis=0), axis=1).to_numpy().T
+    post_12_control_numpy = post_12_control.div(post_12_control.sum(axis=0), axis=1).to_numpy().T
+    post_16_control_numpy = post_16_control.div(post_16_control.sum(axis=0), axis=1).to_numpy().T
+    post_25_control_numpy = post_25_control.div(post_25_control.sum(axis=0), axis=1).to_numpy().T
+    post_control_numpy = post_control.div(post_control.sum(axis=0), axis=1).to_numpy().T
+
     return {
         "data": data,
         "baseline_full_df": baseline_full,
@@ -57,11 +97,19 @@ def load_Messaoudene_et_al_data(
         "baseline_df": df_baseline,
         "abx_3_df": df_ABX_3,
         "abx_df": df_ABX,
+        "abx_cohorts_df": [df_ABX_3, df_ABX],
         "post_abx_9_df": df_post_ABX_9,
         "post_abx_12_df": df_post_ABX_12,
         "post_abx_16_df": df_post_ABX_16,
         "post_abx_25_df": df_post_ABX_25,
         "post_abx_df": df_post_ABX,
+        "post_abx_cohorts_df": [
+            df_post_ABX_9,
+            df_post_ABX_12,
+            df_post_ABX_16,
+            df_post_ABX_25,
+            df_post_ABX
+        ],
         "filtered_keys": filtered_keys,
         "keys": keys,
         "baseline_full": baseline_full_numpy,
@@ -81,7 +129,22 @@ def load_Messaoudene_et_al_data(
             post_ABX_25_numpy,
             post_ABX_numpy
         ],
-        "times_post_abx": times_post_abx
+        "times_post_abx": times_post_abx,
+        "baseline_control": base_control_numpy,
+        "abx3_control": ABX3_control_numpy,
+        "abx_control": ABX_control_numpy,
+        "post_9_control": post_9_control_numpy,
+        "post_12_control": post_12_control_numpy,
+        "post_16_control": post_16_control_numpy,
+        "post_25_control": post_25_control_numpy,
+        "post_control": post_control_numpy,
+        "post_abx_cohorts_control": [
+            post_9_control_numpy,
+            post_12_control_numpy,
+            post_16_control_numpy,
+            post_25_control_numpy,
+            post_control_numpy
+        ],
     }
 
 def load_Messaoudene_et_al_functional_data() -> Dict[str, Optional[object]]:

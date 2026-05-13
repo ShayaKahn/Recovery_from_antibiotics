@@ -2,7 +2,7 @@ from src.host_specific_recovery.utils.general_utils import subset
 from src.host_specific_recovery.statistical_models.colonization_probability import ColonizationProbability
 import numpy as np
 
-def run_cross_species_probability_analysis(dataset: dict) -> dict:
+def run_cross_species_probability_analysis(dataset: dict, min_estimate) -> dict:
 
     post_ABX = dataset["post_abx_cohorts"]
     baseline = dataset["baseline"]
@@ -11,18 +11,23 @@ def run_cross_species_probability_analysis(dataset: dict) -> dict:
     new_probs = []
     returned_probs = []
 
-    for i, base, abx in enumerate(zip(baseline, ABX)):
+    for i, (base, abx) in enumerate(zip(baseline, ABX)):
 
         post_matrix = np.vstack([p[i, :] for p in post_ABX])
-        new_species_prev = subset(post_matrix, base, abx, True, True)[-2]
-        returned_species_prev = subset(post_matrix, base, abx, False, False)[-2]
+        new_species = subset(post_matrix, base, abx, True, True)[-2]
+        returned_species = subset(post_matrix, base, abx, False, False)[-2]
 
         dim = post_matrix.shape[0] - 1
-        new_species = subset(post_matrix[:dim, :], base, abx, True, True)[-1]
-        returned_species = subset(post_matrix[:dim, :], base, abx, False, False)[-1]
+        new_species_prev = subset(post_matrix[:dim, :], base, abx, True, True)[-1]
+        returned_species_prev = subset(post_matrix[:dim, :], base, abx, False, False)[-1]
 
-        new_probs.append(np.sum(new_species) / np.sum(new_species_prev))
-        returned_probs.append(np.sum(returned_species) / np.sum(returned_species_prev))
+        if not ((np.sum(new_species_prev) <= min_estimate) or (np.sum(returned_species_prev) <= min_estimate)):
+
+            print(np.sum(new_species_prev))
+            print(np.sum(new_species))
+            print(" ")
+            new_probs.append(np.sum(new_species) / np.sum(new_species_prev))
+            returned_probs.append(np.sum(returned_species) / np.sum(returned_species_prev))
 
     new_probs = np.array(new_probs)
     returned_probs = np.array(returned_probs)
@@ -32,7 +37,7 @@ def run_cross_species_probability_analysis(dataset: dict) -> dict:
         "returned_probs": returned_probs
     }
 
-def run_cross_subject_probability_analysis(dataset: dict, B, seed=0) -> dict:
+def run_cross_subject_probability_analysis(dataset: dict, B=10000, seed=0) -> dict:
 
     timeseries_tensor = np.array([dataset["baseline"], dataset["abx"], *dataset["post_abx_cohorts"]])
     cp = ColonizationProbability(timeseries_tensor)

@@ -45,16 +45,24 @@ def species_proportions(baseline_spm, abx_smp, post_matrix, tau, strict=False, w
     else:
         return [n_survived / s, n_emerged / s, n_early / s, n_late / s, n_new / s]
 
-def run_species_proportios_heatmap_analysis(dataset: dict, tau: int, strict: bool = False) -> dict:
+def run_species_proportios_heatmap_analysis(dataset: dict, tau: int, strict: bool = False, control=False) -> dict:
 
     # Initialization
     proportions = []
     weighted_proportions = []
 
-    # Apply classification
-    for i, abx, base in enumerate(zip(dataset["abx"], dataset["baseline"])):
+    if control:
+        baseline = dataset['baseline_control']
+        antibiotics = dataset['abx_control']
+        post_matrix_tot = dataset['post_abx_cohorts_control']
+    else:
+        baseline = dataset['baseline']
+        antibiotics = dataset['abx_control']
+        post_matrix_tot = dataset['post_abx_cohorts']
 
-        post_matrix = np.vstack([p[i, :] for p in dataset["post_abx_cohorts"]])
+    # Apply classification
+    for i, (abx, base) in enumerate(zip(antibiotics, baseline)):
+        post_matrix = np.vstack([p[i, :] for p in post_matrix_tot])
         proportions.append(species_proportions(base, abx, post_matrix, tau, strict=strict, weighted=False))
         weighted_proportions.append(species_proportions(base, abx, post_matrix, tau, strict=strict, weighted=True))
 

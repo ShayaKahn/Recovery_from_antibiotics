@@ -199,8 +199,12 @@ class FunctionalDataPipeline:
         rng = np.random.default_rng()
         selected_taxa = list(rng.choice(list(eligible_taxa), size=n, replace=False))
 
-        sample_rows_filtered_agg, selected_taxa_abun = self.filter_taxon_sample_rows(sample_rows, selected_taxa,
-                                                                                     keep=True)
+        sample_rows_filtered_agg = self.filter_taxon_sample_rows(sample_rows, selected_taxa, keep=True)
+        selected_taxa_abun = (
+            sample_rows.loc[sample_rows["taxon"].isin(selected_taxa), ["taxon", "taxon_abun"]]
+            .drop_duplicates("taxon")
+            .set_index("taxon")["taxon_abun"]
+        )
 
         return sample_rows_filtered_agg, selected_taxa_abun
 

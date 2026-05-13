@@ -6,9 +6,9 @@ from matplotlib.patches import Arc
 def plot_proportions_heatmap(outputs, weighted=False, path=None):
 
     if weighted:
-        mat = outputs["weighted_proportions_mat"]
+        mat = outputs["weighted_proportions"]
     else:
-        mat = outputs["proportions_mat"]
+        mat = outputs["proportions"]
 
     idx = np.argsort(mat[:, 0] + mat[:, 1] + mat[:, 2])
 
@@ -68,9 +68,9 @@ def plot_proportions_heatmap(outputs, weighted=False, path=None):
 def plot_pie_chart(outputs, weighted=False, path=None):
 
     if weighted:
-        mean_mat = outputs["weighted_proportions_mat"].mean(axis=0)
+        mean_mat = outputs["weighted_proportions"].mean(axis=0)
     else:
-        mean_mat = outputs["proportions_mat"].mean(axis=0)
+        mean_mat = outputs["proportions"].mean(axis=0)
 
     titles = [' ', ' ', ' ', ' ', ' ']
 

@@ -83,14 +83,15 @@ def plot_two_hists_with_auc(A, B, bins="fd", n_bins: int | None = None, density=
     fig.tight_layout()
     if path is not None:
         fig.savefig(path, dpi=dpi, bbox_inches="tight")
+    else:
+        plt.show()
 
-    return ax
 
 def plot_similarity_network(S_AC: pd.DataFrame, S_BC: pd.DataFrame, S_AD: pd.DataFrame, S_BD: pd.DataFrame,
-                            threshold_quantile: float = 0.9, node_size: int = 3000, figsize=(9, 13), A_color="#ff6a3a",
-                            B_color="#a62a0d", C_color="#66aa00", D_color="#1f77b4", auto_y: bool = True,
-                            gap: float = 0.02, gap_AB: float = 0.1, gap_CD: float = 0.0,  shuffle: bool = True,
-                            seed: int | None = 1, path: str | None = None,):
+                            threshold_quantile: float = 0.9, node_size: int = 3000, figsize=(9, 13),
+                            A_color="#ff6a3a", B_color="#a62a0d", C_color="#66aa00",
+                            D_color="#1f77b4", auto_y: bool = True, gap: float = 0.02, gap_AB: float = 0.1,
+                            gap_CD: float = 0.0,  shuffle: bool = True, seed: int | None = 1, path: str | None = None,):
 
     if not S_AC.columns.equals(S_BC.columns):
         raise ValueError("S_AC.columns and S_BC.columns must be identical (same C taxa, same order).")
@@ -274,8 +275,9 @@ def plot_similarity_network(S_AC: pd.DataFrame, S_BC: pd.DataFrame, S_AD: pd.Dat
     plt.tight_layout()
     if path is not None:
         plt.savefig(path, dpi=300, bbox_inches="tight")
+    else:
+        plt.show()
 
-    return fig, ax
 
 def plot_effectsize_vs_effectsize(eff1, p1, eff2, p2, alpha=0.05, xlabel="Effect size (Group 1)",
                                   ylabel="Effect size (Group 2)", title=None, s=60, xlim=(0.5, 1.0),
@@ -333,4 +335,5 @@ def plot_effectsize_vs_effectsize(eff1, p1, eff2, p2, alpha=0.05, xlabel="Effect
     plt.tight_layout()
     if path is not None:
         plt.savefig(path, dpi=dpi, bbox_inches="tight")
-    return fig, ax
+    else:
+        plt.show()

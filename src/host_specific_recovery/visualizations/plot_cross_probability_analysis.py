@@ -56,7 +56,7 @@ def plot_colonization_probabilities_bubble(outputs, color, path=None, size_scale
     else:
         plt.show()
 
-def plot_cross_species(outputs, title, path=None):
+def plot_cross_species(outputs, title, color,  path=None):
 
     new_probs = outputs["new_probs"]
     returned_probs = outputs["returned_probs"]
@@ -69,7 +69,7 @@ def plot_cross_species(outputs, title, path=None):
     axis_width = 3
 
     ax.scatter(new_probs, returned_probs,
-               s=marker_area, marker='o', c='#1A71B8', alpha=0.7, linewidths=0, label=title)
+               s=marker_area, marker='o', c=color, alpha=0.7, linewidths=0, label=title)
 
     xline = np.array([-eps, 1 + eps])
     ax.plot(xline, xline, '--', color='black', linewidth=line_width)
