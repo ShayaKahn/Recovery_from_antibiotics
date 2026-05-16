@@ -10,7 +10,7 @@ The project focuses on questions such as whether microbiota recovery is personal
 
 The current version of the research article is available here:
 
-[Manuscript PDF](https://drive.google.com/drive/folders/1DR6JP5VyiqzKtYUT7sgYjbD5zLfPFAYp?dmr=1&ec=wgc-drive-%5Bmodule%5D-goto)
+[Manuscript PDF](https://drive.google.com/file/d/1yvUP08y3Mzgn8f729OFHlFhsNsIvKxsl/view?usp=sharing)
 
 ## Installation
 
