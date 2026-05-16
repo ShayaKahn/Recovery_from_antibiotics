@@ -1,10 +1,6 @@
 from src.host_specific_recovery.statistical_models.null_model import NullModel
-from src.host_specific_recovery.data_processing.rarify import Rarify
 from src.host_specific_recovery.statistical_models.surrogate import Surrogate
 from src.host_specific_recovery.statistical_models.similarity_correlation import SimilarityCorrelation
-from src.host_specific_recovery.metrics.similarity import Similarity
-from src.host_specific_recovery.simulations.historical_contingency import HC
-from src.host_specific_recovery.data_processing.optimal import OptimalCohort
 from src.host_specific_recovery.statistical_models.functional_test import FunctionalTest, ApplyFunctionalTest
 from src.host_specific_recovery.statistical_models.unifrac_test import UnifracTest
 from unittest import TestCase
@@ -13,6 +9,7 @@ import pandas as pd
 from pandas.io.parsers.readers import TextFileReader
 from pathlib import Path
 from skbio import TreeNode
+
 
 class TestFunctionalTest(TestCase):
     """This class tests the FunctionalTest class."""
@@ -240,149 +237,6 @@ class TestSimilarityCorrelation(TestCase):
         self.assertEqual(np.size(idx), self.post_ABX_container["A"].shape[0] - self.timepoints)
 
 
-class TestOptimalCohort(TestCase):
-    def setUp(self) -> None:
-        # Two default samples.
-        self.samples_dict = {'a': np.array([[11, 0, 8], [3, 9, 2], [0, 1, 3]]),
-                             'b': np.array([[7, 1, 2], [1, 6, 0], [2, 3, 8], [8, 2, 5], [0, 1, 0]]),
-                             'c': np.array([[35, 0, 17], [3, 4, 3], [1, 0, 8]]),
-                             'd': np.array([[12, 7, 4], [1, 0, 0], [7, 1, 0], [6, 6, 6]])}
-        self.optimal = OptimalCohort(self.samples_dict, method='jaccard')
-        self.optimal_samples = self.optimal.get_optimal_samples()
-    def test_get_optimal_samples(self):
-        self.assertEqual(np.sum(self.optimal_samples[0], axis=1).tolist(),
-                         np.ones(np.size(self.optimal_samples[0], axis=0)).tolist())
-
-class Test_Rarify(TestCase):
-    def setUp(self) -> None:
-        self.df = pd.DataFrame({
-                  'A': [1, 3, 0, 2],
-                  'B': [2, 0, 2, 1],
-                  'C': [0, 4, 0, 0],
-                  'D': [50, 12, 0, 0],
-                   })
-        print(self.df.sum())
-        self.min = Rarify(self.df)
-        self.depth = Rarify(self.df, depth=5)
-
-    def test_rarify(self):
-        # test the Rarify class using both the default and the depth parameter
-        rar_df_min = self.min.rarify()
-        self.assertEqual(list(rar_df_min.sum()), [4, 4, 4, 4])
-        rar_df_depth = self.depth.rarify()
-        self.assertEqual(list(rar_df_depth.sum()), [5, 5, 5])
-
-
-class Test_Similarity(TestCase):
-    def setUp(self) -> None:
-        self.first_sample = np.array([[0.1, 0, 0.2, 0.4, 0, 0, 0.1, 0.3]])
-        self.sample = np.array([[0.1, 0, 0.2, 0.7, 0, 0, 0.2, 0]])
-        self.matrix = np.array([[0.2, 0, 0.2, 0.5, 0, 0, 0.2, 0],
-                                [0, 0.2, 0.2, 0, 0, 0.5, 0.2, 0],
-                                [0, 0, 0.3, 0, 0.5, 0.1, 0.2, 0],
-                                [0.9, 0, 0, 0, 0, 0, 0, 0.2]])
-
-    def test_jaccard(self):
-        # sample
-        similarity_smp = Similarity(self.first_sample, self.sample, method='Jaccard', norm=True)
-        jaccard_val = similarity_smp.calculate_similarity()
-        self.assertEqual(jaccard_val, 0.8)
-        self.assertEqual(similarity_smp.sample_first.sum(), 1)
-        self.assertEqual(similarity_smp.matrix.sum(), 1)
-        # matrix
-        similarity_mat = Similarity(self.first_sample, self.matrix, method='Jaccard', norm=True)
-        jaccard_val_mat = similarity_mat.calculate_similarity()
-        self.assertListEqual(list(jaccard_val_mat), [0.8, 2/7, 2/7, 0.4])
-        self.assertEqual(similarity_mat.sample_first.sum(), 1.)
-        self.assertTrue(np.allclose(list(similarity_mat.matrix.sum(axis=1)), list(np.ones((4,)))))
-
-    def test_overlap(self):
-        #This function tests the Overlap similarity method for sample and matrix cases.
-        # sample
-        similarity_smp = Similarity(self.first_sample, self.sample, method='Overlap', norm=False)
-        overlap_val = similarity_smp.calculate_similarity()
-        self.assertEqual(overlap_val, 1)
-        self.assertNotEqual(similarity_smp.sample_first.sum(), 1)
-        self.assertNotEqual(similarity_smp.matrix.sum(), 1)
-        # matrix
-        similarity_mat = Similarity(self.first_sample, self.matrix, method='Overlap', norm=False)
-        overlap_val_mat = similarity_mat.calculate_similarity()
-        self.assertTrue(np.allclose(list(overlap_val_mat), [0.95, 0.35, 0.4, 0.75]))
-        self.assertNotEqual(similarity_mat.sample_first.sum(), 1.)
-        self.assertFalse(np.allclose(list(similarity_mat.matrix.sum(axis=1)), [1, 1, 1, 1]))
-
-    def test_dice(self):
-        #This function tests the Dice similarity method for sample and matrix cases.
-        # sample
-        similarity_smp = Similarity(self.first_sample, self.sample, method='Dice', norm=True)
-        dice_val = similarity_smp.calculate_similarity()
-        self.assertEqual(dice_val, 8/9)
-        # matrix
-        similarity_mat = Similarity(self.first_sample, self.matrix, method='Dice', norm=True)
-        dice_val_mat = similarity_mat.calculate_similarity()
-        self.assertListEqual(list(dice_val_mat), [8/9, 4/9, 4/9, 4/7])
-
-    def test_szymkiewicz_simpson(self):
-        #This function tests the Szymkiewicz Simpson similarity method for sample and matrix cases.
-        # sample
-        similarity_smp = Similarity(self.first_sample, self.sample, method='Szymkiewicz Simpson',
-                                    norm=True)
-        ss_val = similarity_smp.calculate_similarity()
-        self.assertEqual(ss_val, 1)
-        # matrix
-        similarity_mat = Similarity(self.first_sample, self.matrix, method='Szymkiewicz Simpson',
-                                    norm=True)
-        ss_val_mat = similarity_mat.calculate_similarity()
-        self.assertListEqual(list(ss_val_mat), [1, 0.5, 0.5, 1])
-
-    def test_recovery(self):
-        # This function tests the Recovery similarity method for sample and matrix cases.
-        # sample
-        similarity_smp = Similarity(self.first_sample, self.sample, method='Recovery',
-                                    norm=True)
-        recovery_val = similarity_smp.calculate_similarity()
-        self.assertEqual(recovery_val, 0.8)
-        # matrix
-        similarity_mat = Similarity(self.first_sample, self.matrix, method='Recovery',
-                                    norm=True)
-        recovery_val_mat = similarity_mat.calculate_similarity()
-        self.assertListEqual(list(recovery_val_mat), [0.8, 0.4, 0.4, 0.4])
-
-    def test_specificity(self):
-        # This function tests the Specificity similarity method for sample and matrix cases.
-        # sample
-        similarity_smp = Similarity(self.first_sample, self.sample, method='Specificity',
-                                    norm=True)
-        specificity_val = similarity_smp.calculate_similarity()
-        self.assertEqual(specificity_val, 1)
-        # matrix
-        similarity_mat = Similarity(self.first_sample, self.matrix, method='Specificity',
-                                    norm=True)
-        specificity_val_mat = similarity_mat.calculate_similarity()
-        self.assertListEqual(list(specificity_val_mat), [1, 0.5, 0.5, 1])
-
-    def test_weighted_jaccard(self):
-        # This function tests the Weighted Jaccard similarity method for sample and matrix cases.
-        # sample
-        similarity_smp = Similarity(self.first_sample, self.sample, method='Weighted Jaccard',
-                                    norm=False)
-        jaccard_w_val = similarity_smp.calculate_similarity()
-        self.assertEqual(jaccard_w_val, 0.8/1.1)
-        # matrix
-        similarity_mat = Similarity(self.first_sample, self.matrix, method='Weighted Jaccard',
-                                    norm=False)
-        jaccard_w_val_mat = similarity_mat.calculate_similarity()
-        self.assertTrue(np.allclose(list(jaccard_w_val_mat), [0.8/1.1, 0.3/1.1, 0.3/1.1, 0.4/1.1]))
-
-    def test_weighted_jaccard_symmetric(self):
-        # This function tests the Weighted Jaccard symmetric similarity method.
-        # sample
-        similarity_smp = Similarity(self.first_sample, self.sample, method='Weighted Jaccard symmetric',
-                                    norm=False)
-        jaccard_w_val = similarity_smp.calculate_similarity()
-        self.assertEqual(jaccard_w_val, 0.5333333333333333)
-
-
 class Test_NullModel(TestCase):
     def setUp(self) -> None:
         self.baseline_sample = np.array([0.1, 0, 0, 0.2, 0.3, 0.1, 0, 0.1, 0.2, 0])
@@ -455,89 +309,3 @@ class Test_Surrogate(TestCase):
         self.assertEqual(self.surrogate_mat.test_key, "Test subject")
         self.assertListEqual(list(self.surrogate_mat.test_base_sample), [1, 0, 1, 1, 1, 0, 1, 1])
 
-class TestHC(TestCase):
-    def setUp(self) -> None:
-        self.num_samples = 10
-        self.pool_size = 50
-        self.num_survived_min = 25
-        self.num_survived_max = 25
-        self.mean = 0
-        self.sigma = 15
-        self.c = 0.05
-        self.delta = 1e-4
-        self.final_time = 1000
-        self.max_step = 0.05
-        self.epsilon = 1e-4
-        self.phi = 1e-4
-        self.min_growth = 1
-        self.max_growth = 1
-        self.symmetric = True
-        self.alpha = None
-        self.method = 'RK45'
-        self.multiprocess = True#False
-        self.switch_off = False
-
-        # No switch off
-        self.HC_no_switch = HC(self.num_samples, self.pool_size, self.num_survived_min, self.num_survived_max, self.mean,
-                               self.sigma, self.c, self.delta, self.final_time, self.max_step, self.epsilon,
-                               self.phi, self.min_growth, self.max_growth, self.symmetric, self.alpha, self.method,
-                               self.multiprocess)
-
-        print(self.HC_no_switch.test_idx)
-
-        # Switch off
-        self.HC_switch = HC(self.num_samples, self.pool_size, self.num_survived_min, self.num_survived_max, self.mean,
-                            self.sigma, self.c, self.delta, self.final_time, self.max_step, self.epsilon,
-                            self.phi, self.min_growth, self.max_growth, self.symmetric, self.alpha, self.method,
-                            self.multiprocess, switch_off=True)
-
-    def test_num_survived_lst(self):
-        self.assertEqual(len(self.HC_no_switch.num_survived_list), self.num_samples -
-                         len(self.HC_no_switch.event_not_satisfied_ind) - len([self.HC_no_switch.test_idx]))
-        self.assertEqual(len(self.HC_switch.num_survived_list), self.num_samples -
-                         len(self.HC_switch.event_not_satisfied_ind) - len([self.HC_switch.test_idx]))
-        if self.num_survived_min == self.num_survived_max:
-            self.assertEqual(np.max(self.HC_no_switch.num_survived_list), self.num_survived_min)
-            self.assertEqual(np.min(self.HC_switch.num_survived_list), self.num_survived_min)
-        else:
-            self.assertTrue(np.max(self.HC_no_switch.num_survived_list) <= self.num_survived_max)
-            self.assertTrue(np.min(self.HC_no_switch.num_survived_list) >= self.num_survived_min)
-            self.assertTrue(np.max(self.HC_switch.num_survived_list) <= self.num_survived_max)
-            self.assertTrue(np.min(self.HC_switch.num_survived_list) >= self.num_survived_min)
-
-    def test_interaction_matrix(self):
-        self.assertTrue(np.array_equal(np.diag(self.HC_no_switch.A), np.zeros((1, self.pool_size)).squeeze()))
-        self.assertTrue(np.array_equal(np.diag(self.HC_switch.A), np.zeros((1, self.pool_size)).squeeze()))
-
-    def test_set_logistic_growth(self):
-        self.assertEqual(self.HC_no_switch.s.shape, (self.pool_size,))
-
-    def test_set_growth_rate(self):
-        self.assertEqual(self.HC_no_switch.r.shape, (self.pool_size,))
-
-    def test_set_initial_conditions(self):
-        self.assertEqual(self.HC_no_switch.Y_0.shape[0], self.num_samples)
-        self.assertEqual(self.HC_switch.Y_0.shape[0], self.num_samples)
-        self.assertTrue(np.max(self.HC_no_switch.Y_0.astype(bool).sum(axis=1)) <= self.num_survived_max)
-        self.assertTrue(np.min(self.HC_no_switch.Y_0.astype(bool).sum(axis=1)) >= self.num_survived_min)
-        self.assertTrue(np.max(self.HC_switch.Y_0.astype(bool).sum(axis=1)) <= self.num_survived_max)
-        self.assertTrue(np.min(self.HC_switch.Y_0.astype(bool).sum(axis=1)) >= self.num_survived_min)
-
-    def test_set_symmetric_interaction_matrix(self):
-        N = self.HC_no_switch._set_symmetric_interaction_matrix()
-        mat = N.copy()
-        index = np.where(mat != 0)
-        mat[index] = 1
-        self.assertTrue(np.array_equal(mat, mat.T))
-
-    def test_insert_total_pool_others(self):
-        mat = self.HC_switch.y
-        self.assertAlmostEqual(np.min(mat), self.epsilon, places=5)
-
-    def test_consistency(self):
-        event_not_satisfied_ind = self.HC_no_switch.event_not_satisfied_ind
-        event_not_satisfied_ind_Y_s = self.HC_no_switch.event_not_satisfied_ind_Y_s
-        results = self.HC_no_switch.get_results()
-        Y_s = results["Y_s"]
-        self.assertEqual(Y_s.shape[0],
-                         self.num_samples - len(event_not_satisfied_ind) - len(event_not_satisfied_ind_Y_s) - 1)

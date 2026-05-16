@@ -3,7 +3,6 @@ import numpy as np
 from typing import Tuple, List, Union, Sequence, Optional
 from collections import defaultdict
 from pathlib import Path
-
 import duckdb
 
 class FunctionalDataPipeline:

@@ -57,7 +57,7 @@ def run_species_proportios_heatmap_analysis(dataset: dict, tau: int, strict: boo
         post_matrix_tot = dataset['post_abx_cohorts_control']
     else:
         baseline = dataset['baseline']
-        antibiotics = dataset['abx_control']
+        antibiotics = dataset['abx']
         post_matrix_tot = dataset['post_abx_cohorts']
 
     # Apply classification

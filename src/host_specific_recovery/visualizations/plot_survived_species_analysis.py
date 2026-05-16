@@ -7,13 +7,11 @@ def plot_survived_species_analysis(outputs, x_vals, x_labels, dir=None):
 
     fig, ax = plt.subplots(figsize=(25, 25))
 
-    print(results_matrix)
-
     for row in results_matrix:
 
-        ax.plot(x_vals, row[0:-1], linewidth=15, color='#7f7f7f')
+        ax.plot(x_vals, row, linewidth=15, color='#7f7f7f')
 
-        ax.plot(x_vals, mean[0:-1], linewidth=30, color='black')
+        ax.plot(x_vals, mean, linewidth=30, color='black')
 
         ax.set_xticks(x_vals)
         ax.set_xticklabels(x_labels, fontsize=100, rotation=-90, color="black")

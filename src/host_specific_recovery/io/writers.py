@@ -3,6 +3,7 @@ import numpy as np
 import csv
 import os
 import pickle
+from utils.general_functions import calc_similarity_standard
 
 def save_sda_results(outputs: dict, base_dir: str | Path) -> None:
 
@@ -110,9 +111,9 @@ def save_sc_results(outputs: dict, base_dir: str | Path) -> None:
     full_path_others = os.path.join(base_dir, filename_others)
     full_path_sizes = os.path.join(base_dir, filename_sizes)
 
-    np.savetxt(full_path_new, outputs["sim_new_mat_numpy"], delimiter=",", fmt="%s")
-    np.savetxt(full_path_others, outputs["sim_others_mat_numpy"], delimiter=",", fmt="%s")
-    np.savetxt(full_path_sizes, outputs["sizes_mat_numpy"], delimiter=",", fmt="%s")
+    np.savetxt(full_path_new, outputs["similarity_new"], delimiter=",", fmt="%s")
+    np.savetxt(full_path_others, outputs["similarity_others"], delimiter=",", fmt="%s")
+    np.savetxt(full_path_sizes, outputs["sizes"], delimiter=",", fmt="%s")
 
 def save_HS_simulation_results(outputs: dict, base_dir: str | Path) -> None:
 
@@ -175,3 +176,48 @@ def save_survived_species_analysis_results(outputs: dict, base_dir: str | Path) 
 
     np.save(base_dir / "results_matrix.npy", outputs["results_matrix"])
     np.save(base_dir / "mean.npy", outputs["mean"])
+
+
+def write_hc(outputs: dict, base_dir: str | Path) -> None:
+    ABX_sim = outputs["abx_sim"]
+    post_sim = outputs["post_sim"]
+    post_sim_others = outputs["post_sim_others"]
+
+    ABX_sim_off = outputs["abx_sim_off"]
+    post_sim_off = outputs["post_sim_off"]
+    post_sim_others_off = outputs["post_sim_others_off"]
+
+    sims_new, sims_survived = calc_similarity_standard(post_sim, ABX_sim, post_sim_others)
+    sizes = []
+    for smp in post_sim_others:
+        sizes.append(np.size(np.nonzero(smp)))
+    sizes = np.array(sizes)
+    sims_new_off, sims_survived_off = calc_similarity_standard(post_sim_off, ABX_sim_off, post_sim_others_off)
+    sizes_off = []
+    for smp in post_sim_others_off:
+        sizes_off.append(np.size(np.nonzero(smp)))
+    sizes_off = np.array(sizes_off)
+
+    # Save to CSV
+    folder = base_dir#"C:/Users/USER/OneDrive/Desktop/Antibiotics/Results/"
+    filename = "sizes_glv_test.csv"
+    filename_off = "sizes_glv_off_test.csv"
+    filename_new = "sims_new_glv_test.csv"
+    filename_survived = "sims_survived_glv_test.csv"
+    filename_new_off = "sims_new_glv_off_test.csv"
+    filename_survived_off = "sims_survived_glv_off_test.csv"
+
+    full_path = os.path.join(folder, filename)
+    full_path_off = os.path.join(folder, filename_off)
+    full_path_new = os.path.join(folder, filename_new)
+    full_path_survived = os.path.join(folder, filename_survived)
+    full_path_new_off = os.path.join(folder, filename_new_off)
+    full_path_survived_off = os.path.join(folder, filename_survived_off)
+
+    np.savetxt(full_path, sizes, delimiter=",", fmt="%s")
+    np.savetxt(full_path_off, sizes_off, delimiter=",", fmt="%s")
+    np.savetxt(full_path_new, sims_new, delimiter=",", fmt="%s")
+    np.savetxt(full_path_survived, sims_survived, delimiter=",", fmt="%s")
+    np.savetxt(full_path_new_off, sims_new_off, delimiter=",", fmt="%s")
+    np.savetxt(full_path_survived_off, sims_survived_off, delimiter=",", fmt="%s")
+

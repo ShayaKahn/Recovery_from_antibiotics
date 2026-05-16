@@ -18,7 +18,9 @@ def run_survived_species_analysis(dataset: dict, scale=1e2) -> dict:
         for p in post_rows:
             mask &= (p > 0)
 
-        mask &= (base / abx > scale)
+        ratio = np.zeros_like(base, dtype=float)
+        np.divide(base, abx, out=ratio, where=abx != 0)
+        mask &= ratio > scale
 
         s = np.where(mask)[0]
         if s.size:

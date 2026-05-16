@@ -150,6 +150,8 @@ def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/
 def load_Messaoudene_et_al_functional_data() -> Dict[str, Optional[object]]:
 
     # load data
+    data = pd.read_csv('C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132/picrust2_data/full_ASV_table.csv',
+                       index_col=0)
     metadata = pd.read_csv("C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132/Metadata.csv")
     rename_map = dict(zip(metadata["Run"], metadata["Name"]))
     os.chdir("C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132_picrust2_12_12_25_subset/picrust2_out_pipeline_strat")
@@ -159,6 +161,7 @@ def load_Messaoudene_et_al_functional_data() -> Dict[str, Optional[object]]:
     PATH = pd.read_csv("pathways_out/path_abun_unstrat.tsv.gz", sep="\t", index_col=0)
 
     return {
+        'data': data,
         'rename_map': rename_map,
         'PATH_contrib_path': PATH_contrib_path,
         'PATH': PATH

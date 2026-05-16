@@ -80,14 +80,22 @@ class HC:
         self.test_idx, y_s, self.y = self._define_test_index_and_y_s()
         # remove the low abundances and normalize y_s
         self.y_s = self._normalize_cohort(self._remove_low_abundances(y_s))
+        original_test_idx = self.test_idx
         # remove the samples that the steady state condition is not satisfied
         self.Y_p = np.delete(self.Y_p, self.event_not_satisfied_ind, axis=0)
-        self._modify_num_survived_list()
+        self.test_idx = self._compressed_index(self.test_idx, self.event_not_satisfied_ind)
+        self._modify_num_survived_list(original_test_idx)
+        Y_s_phi = self._others_perturbed_species_mask()
         # normalize Y_s
         self.Y_s = self._normalize_cohort(self._insert_total_pool_others())
         # apply the GLV model to Y_s
-        self.Y_s, self.event_not_satisfied_ind_Y_s = self._apply_GLV(self.Y_s, norm=True, int_mat=self.A,
-                                                                n_samples=self.Y_s.shape[0], n_jobs=self.n_jobs)
+        if self.switch_off:
+            self.Y_s, self.event_not_satisfied_ind_Y_s = self._apply_GLV_with_switched_off_interactions(
+                self.Y_s, Y_s_phi
+            )
+        else:
+            self.Y_s, self.event_not_satisfied_ind_Y_s = self._apply_GLV(self.Y_s, norm=True, int_mat=self.A,
+                                                                    n_samples=self.Y_s.shape[0], n_jobs=self.n_jobs)
         self.Y_s = np.delete(self.Y_s, self.event_not_satisfied_ind_Y_s, axis=0)
         # remove the low abundances
         self.Y_s = self._remove_low_abundances(self.Y_s)
@@ -238,17 +246,17 @@ class HC:
             y[s] = np.random.rand(1, self.num_survived_list[index])
         return Y_0
 
-    def _generate_y_s(self, y):
+    def _generate_y_s(self, y, phi):
         """This method generates the post perturbed state for the test sample.
         Inputs:
         y: The test sample.
+        phi: Boolean mask marking the species present before inserting the total pool.
         Returns:
         # y_s: Numpy matrix that represent the post perturbed state.
         # event_not_satisfied_ind_y_s: The indices of the samples that the steady state condition is not satisfied."""
 
         if self.switch_off:
             # switch off the effect of the perturbed species on the new inserted species and vice versa
-            phi = y != 0
             A_copy = self.A.copy()
             A_switch = self._switch_off_interactions(A_copy, phi)
             # apply the GLV model
@@ -286,7 +294,8 @@ class HC:
                 switched off."""
 
         A_copy = A.copy()
-        phi_c = np.setdiff1d(np.arange(A.shape[0]), phi)
+        phi = np.asarray(phi, dtype=bool)
+        phi_c = ~phi
         A_copy[np.ix_(phi_c, phi)] = 0
         A_copy[np.ix_(phi, phi_c)] = 0
         return A_copy
@@ -307,6 +316,21 @@ class HC:
         final_abundances = glv_object.solve()
         return final_abundances
 
+    def _apply_GLV_with_switched_off_interactions(self, init_cond, phi_mat):
+        """Apply GLV with a sample-specific switched interaction matrix."""
+
+        final_abundances = []
+        event_not_satisfied_ind = []
+        for i, (sample, phi) in enumerate(zip(init_cond, phi_mat)):
+            A_switch = self._switch_off_interactions(self.A, phi)
+            result, event_not_satisfied = self._apply_GLV(
+                sample[None, :], norm=True, int_mat=A_switch, n_samples=1, n_jobs=None
+            )
+            final_abundances.append(result.squeeze())
+            if event_not_satisfied:
+                event_not_satisfied_ind.append(i)
+        return np.array(final_abundances), event_not_satisfied_ind
+
     def _filter_norm_Y_p(self):
         """This function removes the low abundances and normalizes Y_p."""
 
@@ -326,9 +350,10 @@ class HC:
         test_idx = None
         for idx in event_satisfied:
             # insert the total pool to the test sample in the perturbed state
+            phi = self.Y_p[idx, :] != 0
             y = self._normalize_cohort(self._insert_total_pool_test(idx))
             # apply the GLV model to y (the test sample)
-            y_s, event_not_satisfied_ind_post = self._generate_y_s(y)
+            y_s, event_not_satisfied_ind_post = self._generate_y_s(y, phi)
             # check if the steady state condition is satisfied
             if not event_not_satisfied_ind_post:
                 test_idx = idx
@@ -336,12 +361,12 @@ class HC:
         if test_idx is None:
             raise ValueError("The steady state condition not satisfied for any sample.")
 
-    def _modify_num_survived_list(self):
+    def _modify_num_survived_list(self, original_test_idx):
         """This function modifies the number of survived species list, by removing the samples that the steady state
         condition is not satisfied."""
 
         self.num_survived_list = [item for idx, item in enumerate(self.num_survived_list) if idx not in
-                                  np.hstack([self.event_not_satisfied_ind, self.test_idx])]
+                                  np.hstack([self.event_not_satisfied_ind, original_test_idx])]
 
 
     def _insert_total_pool_test(self, test_idx):
@@ -372,6 +397,16 @@ class HC:
             p[mask] = self.epsilon
         return Y
 
+    def _others_perturbed_species_mask(self):
+        Y = self.Y_p.copy()
+        Y = np.delete(Y, self.test_idx, axis=0)
+        return Y != 0
+
+    @staticmethod
+    def _compressed_index(idx, removed_indices):
+        removed_indices = np.asarray(removed_indices)
+        return idx - np.sum(removed_indices < idx)
+
     def _remove_low_abundances(self, post):
         """This function removes the low abundances from the post perturbed state.
         Inputs:
@@ -401,6 +436,7 @@ class HC:
         results: Dictionary that contains the results."""
 
         results = {
+            "Y_0": self.Y_0,
             "Y_p": self.Y_p,
             "y_s": self.y_s.squeeze(),
             "Y_s": self.Y_s,

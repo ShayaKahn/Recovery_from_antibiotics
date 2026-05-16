@@ -77,17 +77,29 @@ def calculate_characteristic_time(dataset):
     post_ABX_tensor = np.stack(dataset["post_abx_cohorts"], axis=1)
     returned_characteristic_time_dict = {}
     new_characteristic_time_dict = {}
+    valid_ids = []
     for i in range(len(ids)):
         new_species = subset(post_ABX_tensor[i, ...], baseline_cohort[i, :], ABX_cohort[i, :], True, new=True)
         new_counts = np.array(new_species).sum(axis=1)
-        new_props = new_counts / np.sum(new_counts)
         returned_species = subset(post_ABX_tensor[i, ...], baseline_cohort[i, :], ABX_cohort[i, :], True, new=False)
         returned_counts = np.array(returned_species).sum(axis=1)
-        returned_props = returned_counts / np.sum(returned_counts)
-        returned_characteristic_time_dict[ids[i]] = characteristic_time(returned_props.reshape(1, -1), times)
-        new_characteristic_time_dict[ids[i]] = characteristic_time(new_props.reshape(1, -1), times)
+        new_total = np.sum(new_counts)
+        returned_total = np.sum(returned_counts)
+        if new_total == 0 or returned_total == 0:
+            continue
+
+        new_props = new_counts / new_total
+        returned_props = returned_counts / returned_total
+        returned_characteristic_time = characteristic_time(returned_props.reshape(1, -1), times)
+        new_characteristic_time = characteristic_time(new_props.reshape(1, -1), times)
+        if not np.all(np.isfinite(returned_characteristic_time)) or not np.all(np.isfinite(new_characteristic_time)):
+            continue
+
+        returned_characteristic_time_dict[ids[i]] = returned_characteristic_time
+        new_characteristic_time_dict[ids[i]] = new_characteristic_time
+        valid_ids.append(ids[i])
     return {
         "returned_characteristic_time_dict": returned_characteristic_time_dict,
         "new_characteristic_time_dict": new_characteristic_time_dict,
-        "keys": ids
+        "keys": valid_ids
     }

@@ -15,7 +15,7 @@ def run_similarity_correlation(dataset: dict, timepoints_val:int,  method: str =
     baseline_frame = pd.DataFrame(baseline.T, columns=filtered_keys)
     baseline_ref_frame = pd.DataFrame(baseline_full.T, columns=keys)
     iters = None
-    species_type = 'new'
+    new = True
     strict = True
     zscore = False
     post_abx_container = {}
@@ -25,7 +25,7 @@ def run_similarity_correlation(dataset: dict, timepoints_val:int,  method: str =
 
     # Apply similarity correlation
     sim = SimilarityCorrelation(abx_frame, baseline_frame, post_abx_container, baseline_ref_frame, method,
-                                timepoints_val, iters, species_type, strict, zscore=zscore, n_jobs=n_jobs)
+                                timepoints_val, iters, new, strict, zscore=zscore, n_jobs=n_jobs)
     sims_container_shifted = sim.calc_similarity()
 
     # Construct results

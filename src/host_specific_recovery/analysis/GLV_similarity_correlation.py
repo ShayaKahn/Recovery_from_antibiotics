@@ -22,15 +22,17 @@ def run_HC_simulation(num_samples, pool_size, num_survived_min, num_survived_max
     post_sim_others = results["Y_s"]
 
     # Switch off
+    np.random.seed(numpy_seed)
+    random.seed(random_seed)
     HC_object_off = HC(num_samples, pool_size, num_survived_min, num_survived_max, mean, sigma, c, delta,
                        final_time, max_step, epsilon, threshold, min_growth, max_growth, symmetric,
-                       alpha, method, multiprocess, True)
+                       alpha, method, multiprocess, True, n_jobs)
     results_off = HC_object_off.get_results()
 
-    base_sim_off = results["Y_0"]
-    abx_sim_off = results["Y_p"]
-    post_sim_off = results["y_s"]
-    post_sim_others_off = results["Y_s"]
+    base_sim_off = results_off["Y_0"]
+    abx_sim_off = results_off["Y_p"]
+    post_sim_off = results_off["y_s"]
+    post_sim_others_off = results_off["Y_s"]
 
     return {
         "base_sim": base_sim,

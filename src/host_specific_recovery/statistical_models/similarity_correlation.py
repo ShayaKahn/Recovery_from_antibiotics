@@ -10,7 +10,8 @@ class SimilarityCorrelation:
 
     __slots__ = ('ABX', 'baseline', 'post_ABX_matrices', 'baseline_ref', 'method', 'timepoints', 'iters',
                  'new', 'strict', 'keys', 'keys_ref', 'n_jobs', 'zscore', 'synthetic_baseline_lst', 'verbose')
-    def __init__(self, ABX, baseline, post_ABX_container, baseline_ref, method, timepoints, iters=None, new=True,
+    def __init__(self, ABX, baseline, post_ABX_container,
+                 baseline_ref, method, timepoints, iters=None, new=True,
                  strict=True, n_jobs=4, zscore=False, verbose=True):
         """
         ABX: pandas dataframe of shape (# test subjects, # species):
@@ -202,6 +203,7 @@ class SimilarityCorrelation:
                  similarity calculation."""
         if self.new:
             idx = np.where((base == 0) & (abx == 0) & (post_mat[-1, :] != 0))[0]
+            print(np.size(idx))
         else:
             idx = np.hstack([np.where(r)[0] for r in returned_lst[self.timepoints:]])
         return idx

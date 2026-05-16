@@ -10,6 +10,7 @@ def run_null_model_analysis(dataset: dict, timepoints_val:int,  method: str = "S
 
     # iterate over the test subjects
     for j, (base, abx) in enumerate(zip(dataset["baseline"], dataset["abx"])):
+        print(j)
         post_abx_matrix = np.vstack([post[j, :] for post in dataset["post_abx_cohorts"]])
         # apply null model
         null_model_obj = NullModel(base, abx, dataset["baseline_full"], post_abx_matrix, num_reals, timepoints_val)
