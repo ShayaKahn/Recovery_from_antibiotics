@@ -52,6 +52,9 @@ def _build_columns_180_appear_4() -> List[str]:
     return ['ERAS2_Dag180', 'ERAS3_Dag180', 'ERAS4_Dag180', 'ERAS5_Dag180', 'ERAS6_Dag180', 'ERAS7_Dag180',
             'ERAS9_Dag180', 'ERAS11_Dag180', 'ERAS12_Dag180']
 
+def _normalize_columns(df):
+    return df.div(df.sum(axis=0), axis=1)
+
 def load_Palleja_et_al_data() -> Dict[str, Optional[object]]:
 
     # load data
@@ -78,6 +81,16 @@ def load_Palleja_et_al_data() -> Dict[str, Optional[object]]:
     post_ABX_180_full = transpose_numeric(rel_abund_rarefied[columns_180], norm=True)
     post_ABX_180_appear_4 = transpose_numeric(rel_abund_rarefied[columns_180_appear_4], norm=True)
 
+    baseline_full_df = _normalize_columns(rel_abund_rarefied[baseline_columns])
+    baseline_df = _normalize_columns(rel_abund_rarefied[baseline_columns_appear_4])
+    abx_df = _normalize_columns(rel_abund_rarefied[columns_4])
+    post_abx_8_full_df = _normalize_columns(rel_abund_rarefied[columns_8])
+    post_abx_8_appear_4_df = _normalize_columns(rel_abund_rarefied[columns_8_appear_4])
+    post_abx_42_full_df = _normalize_columns(rel_abund_rarefied[columns_42])
+    post_abx_42_appear_4_df = _normalize_columns(rel_abund_rarefied[columns_42_appear_4])
+    post_abx_full_df = _normalize_columns(rel_abund_rarefied[columns_180])
+    post_abx_180_appear_4_df = _normalize_columns(rel_abund_rarefied[columns_180_appear_4])
+
     keys = _build_keys()
     filtered_keys = _build_filtered_keys()
 
@@ -96,10 +109,34 @@ def load_Palleja_et_al_data() -> Dict[str, Optional[object]]:
         "post_abx_42_appear_4": post_ABX_42_appear_4,
         "abx": ABX_filtered,
 
+        "baseline_full_df": baseline_full_df,
+        "baseline_df": baseline_df,
+        "post_abx_full_df": post_abx_full_df,
+        "post_abx_8_full_df": post_abx_8_full_df,
+        "post_abx_8_appear_4_df": post_abx_8_appear_4_df,
+        "post_abx_42_full_df": post_abx_42_full_df,
+        "post_abx_42_appear_4_df": post_abx_42_appear_4_df,
+        "abx_df": abx_df,
+
+        "df_baseline_full": baseline_full_df,
+        "df_baseline": baseline_df,
+        "df_post_ABX_full": post_abx_full_df,
+        "df_post_ABX_8_full": post_abx_8_full_df,
+        "df_post_ABX_8_appear_4": post_abx_8_appear_4_df,
+        "df_post_ABX_42_full": post_abx_42_full_df,
+        "df_post_ABX_42_appear_4": post_abx_42_appear_4_df,
+        "df_ABX": abx_df,
+
         "post_abx_cohorts": [
             post_ABX_8_appear_4,
             post_ABX_42_appear_4,
             post_ABX_180_appear_4
+        ],
+
+        "post_abx_cohorts_df": [
+            post_abx_8_appear_4_df,
+            post_abx_42_appear_4_df,
+            post_abx_180_appear_4_df
         ],
         "times_post_abx": times_post_abx,
 

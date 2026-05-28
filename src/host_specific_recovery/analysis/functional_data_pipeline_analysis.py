@@ -285,15 +285,65 @@ def run_functional_data_pipeline_analysis(prepare_outputs: dict,  load_data_outp
     AUC_lost, pvals_lost = np.array([res["auc"] for res in results_lost]), np.array([res["q_bh"] for res in results_lost])
     AUC_base, pvals_base = np.array([res["auc"] for res in results_base]), np.array([res["q_bh"] for res in results_base])
 
-    AUC_lost_valid, pvals_lost_valid, AUC_base_valid, pvals_base_valid = filter_valid_pairs(
-        AUC_lost, pvals_lost, AUC_base, pvals_base
+    valid_mask = (
+            np.isfinite(AUC_lost)
+            & np.isfinite(pvals_lost)
+            & np.isfinite(AUC_base)
+            & np.isfinite(pvals_base)
+            & (0.0 <= pvals_lost)
+            & (pvals_lost <= 1.0)
+            & (0.0 <= pvals_base)
+            & (pvals_base <= 1.0)
     )
+    AUC_lost_valid, pvals_lost_valid, AUC_base_valid, pvals_base_valid = (
+        AUC_lost[valid_mask],
+        pvals_lost[valid_mask],
+        AUC_base[valid_mask],
+        pvals_base[valid_mask],
+    )
+    valid_subject_ids = np.array(load_data_outputs["filtered_keys"])[valid_mask]
+
+    AUC_lost_valid_with_subjects = pd.Series(
+        AUC_lost_valid,
+        index=valid_subject_ids,
+        name="AUC_mean_colon_transient_vs_lost_valid",
+    )
+    pvals_lost_valid_with_subjects = pd.Series(
+        pvals_lost_valid,
+        index=valid_subject_ids,
+        name="adjusted_pvalues_mean_colon_transient_vs_lost_valid",
+    )
+    AUC_base_valid_with_subjects = pd.Series(
+        AUC_base_valid,
+        index=valid_subject_ids,
+        name="AUC_mean_colon_transient_vs_base_valid",
+    )
+    pvals_base_valid_with_subjects = pd.Series(
+        pvals_base_valid,
+        index=valid_subject_ids,
+        name="adjusted_pvalues_mean_colon_transient_vs_base_valid",
+    )
+    valid_subject_results = pd.DataFrame(
+        {
+            "AUC_mean_colon_transient_vs_lost_valid": AUC_lost_valid,
+            "adjusted_pvalues_mean_colon_transient_vs_lost_valid": pvals_lost_valid,
+            "AUC_mean_colon_transient_vs_base_valid": AUC_base_valid,
+            "adjusted_pvalues_mean_colon_transient_vs_base_valid": pvals_base_valid,
+        },
+        index=valid_subject_ids,
+    )
+    valid_subject_results.index.name = "subject"
 
     return {
         "AUC_mean_colon_transient_vs_lost_valid": AUC_lost_valid,
         "adjusted_pvalues_mean_colon_transient_vs_lost_valid": pvals_lost_valid,
         "AUC_mean_colon_transient_vs_base_valid": AUC_base_valid,
         "adjusted_pvalues_mean_colon_transient_vs_base_valid": pvals_base_valid,
+        "AUC_mean_colon_transient_vs_lost_valid_subjects": AUC_lost_valid_with_subjects,
+        "adjusted_pvalues_mean_colon_transient_vs_lost_valid_subjects": pvals_lost_valid_with_subjects,
+        "AUC_mean_colon_transient_vs_base_valid_subjects": AUC_base_valid_with_subjects,
+        "adjusted_pvalues_mean_colon_transient_vs_base_valid_subjects": pvals_base_valid_with_subjects,
+        "valid_subject_results": valid_subject_results,
         "S_lost_colon": S_lost_colon_selected,
         "S_lost_transient_comb": S_lost_transient_comb_selected,
         "S_base_colon": S_base_colon_selected,

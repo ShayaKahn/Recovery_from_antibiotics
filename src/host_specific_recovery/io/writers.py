@@ -3,7 +3,8 @@ import numpy as np
 import csv
 import os
 import pickle
-from utils.general_functions import calc_similarity_standard
+import pandas as pd
+
 
 def save_sda_results(outputs: dict, base_dir: str | Path) -> None:
 
@@ -38,19 +39,29 @@ def save_sda_results(outputs: dict, base_dir: str | Path) -> None:
     np.save(base_dir / "ranks_naive.npy", np.array(outputs["ranks_naive"]))
 
 
-def save_sda_plot_results(results_sda_plot: dict, base_dir: str | Path) -> None:
+def save_sda_plot_results(results_sda_plot: dict, base_dir: str | Path, slow=False) -> None:
     base_dir = Path(base_dir)
     base_dir.mkdir(parents=True, exist_ok=True)
 
     figure = results_sda_plot.get("figure")
     if figure is not None:
-        figure.savefig(base_dir / "sda_plot.png", dpi=300, bbox_inches="tight", facecolor="white")
-
-    np.save(base_dir / "order.npy", np.asarray(results_sda_plot["order"]))
-    np.save(base_dir / "obs_sorted.npy", np.asarray(results_sda_plot["obs_sorted"], dtype=float))
-    np.save(base_dir / "surr_sorted.npy", np.asarray(results_sda_plot["surr_sorted"], dtype=object))
-    np.save(base_dir / "pvals_adj_sorted.npy", np.asarray(results_sda_plot["pvals_adj_sorted"], dtype=float))
-    np.save(base_dir / "pvals_labels_sorted.npy", np.asarray(results_sda_plot["pvals_labels_sorted"], dtype=str))
+        if slow:
+            figure.savefig(base_dir / "sda_plot_slow.png", dpi=300, bbox_inches="tight", facecolor="white")
+        else:
+            figure.savefig(base_dir / "sda_plot.png", dpi=300, bbox_inches="tight", facecolor="white")
+    if slow:
+        np.save(base_dir / "order_slow.npy", np.asarray(results_sda_plot["order"]))
+        np.save(base_dir / "obs_sorted_slow.npy", np.asarray(results_sda_plot["obs_sorted"], dtype=float))
+        np.save(base_dir / "surr_sorted_slow.npy", np.asarray(results_sda_plot["surr_sorted"], dtype=object))
+        np.save(base_dir / "pvals_adj_sorted_slow.npy", np.asarray(results_sda_plot["pvals_adj_sorted"], dtype=float))
+        np.save(base_dir / "pvals_labels_sorted_slow.npy", np.asarray(results_sda_plot["pvals_labels_sorted"],
+                                                                      dtype=str))
+    else:
+        np.save(base_dir / "order.npy", np.asarray(results_sda_plot["order"]))
+        np.save(base_dir / "obs_sorted.npy", np.asarray(results_sda_plot["obs_sorted"], dtype=float))
+        np.save(base_dir / "surr_sorted.npy", np.asarray(results_sda_plot["surr_sorted"], dtype=object))
+        np.save(base_dir / "pvals_adj_sorted.npy", np.asarray(results_sda_plot["pvals_adj_sorted"], dtype=float))
+        np.save(base_dir / "pvals_labels_sorted.npy", np.asarray(results_sda_plot["pvals_labels_sorted"], dtype=str))
 
 def save_binomial_test_results(outputs: dict, base_dir: str | Path) -> None:
     base_dir = Path(base_dir)
@@ -147,6 +158,8 @@ def save_subject_species_probability_results(outputs: dict, base_dir: str | Path
         pickle.dump({'probs': probs, 'abundances': abundances}, f)
 
 def save_functional_data_pipeline_analysis_results(outputs: dict, base_dir: str | Path) -> None:
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
 
     np.save(base_dir / "AUC_mean_colon_transient_vs_lost_valid.npy", outputs["AUC_mean_colon_transient_vs_lost_valid"])
     np.save(base_dir / "adjusted_pvalues_mean_colon_transient_vs_lost_valid.npy",
@@ -154,6 +167,24 @@ def save_functional_data_pipeline_analysis_results(outputs: dict, base_dir: str 
     np.save(base_dir / "AUC_mean_colon_transient_vs_base_valid.npy", outputs["AUC_mean_colon_transient_vs_base_valid"])
     np.save(base_dir / "adjusted_pvalues_mean_colon_transient_vs_base_valid.npy",
             outputs["adjusted_pvalues_mean_colon_transient_vs_base_valid"])
+
+    outputs["AUC_mean_colon_transient_vs_lost_valid_subjects"].to_csv(
+        base_dir / "AUC_mean_colon_transient_vs_lost_valid_subjects.csv",
+        header=True,
+    )
+    outputs["adjusted_pvalues_mean_colon_transient_vs_lost_valid_subjects"].to_csv(
+        base_dir / "adjusted_pvalues_mean_colon_transient_vs_lost_valid_subjects.csv",
+        header=True,
+    )
+    outputs["AUC_mean_colon_transient_vs_base_valid_subjects"].to_csv(
+        base_dir / "AUC_mean_colon_transient_vs_base_valid_subjects.csv",
+        header=True,
+    )
+    outputs["adjusted_pvalues_mean_colon_transient_vs_base_valid_subjects"].to_csv(
+        base_dir / "adjusted_pvalues_mean_colon_transient_vs_base_valid_subjects.csv",
+        header=True,
+    )
+    outputs["valid_subject_results"].to_csv(base_dir / "valid_subject_results.csv")
 
     with open(base_dir / "S_lost_colon.pkl", 'wb') as f:
         pickle.dump(outputs["S_lost_colon"], f)
@@ -167,6 +198,39 @@ def save_functional_data_pipeline_analysis_results(outputs: dict, base_dir: str 
     with open(base_dir / "S_base_transient_comb.pkl", 'wb') as f:
         pickle.dump(outputs["S_base_transient_comb"], f)
 
+
+def save_phylogenetic_test_results(outputs: dict, base_dir: str | Path) -> None:
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    outputs["unifrac_similarities"].to_csv(base_dir / "unifrac_similarities.csv")
+
+    category_rows = []
+    for subject, subject_outputs in outputs["results"].items():
+        for category, taxa in subject_outputs["categories"].items():
+            for taxon in sorted(taxa):
+                category_rows.append({
+                    "subject": subject,
+                    "category": category,
+                    "taxon": taxon,
+                })
+
+    pd.DataFrame(category_rows, columns=["subject", "category", "taxon"]).to_csv(
+        base_dir / "species_categories.csv",
+        index=False,
+    )
+
+    serializable_results = {
+        subject: {
+            "categories": subject_outputs["categories"],
+            "unifrac_similarities": subject_outputs["unifrac_similarities"],
+        }
+        for subject, subject_outputs in outputs["results"].items()
+    }
+    with open(base_dir / "phylogenetic_test_results.pkl", "wb") as f:
+        pickle.dump(serializable_results, f)
+
+
 def save_species_proportions_heatmap_analysis_results(outputs: dict, base_dir: str | Path) -> None:
 
     np.save(base_dir / "weighted_proportions.npy", outputs["weighted_proportions"])
@@ -179,24 +243,13 @@ def save_survived_species_analysis_results(outputs: dict, base_dir: str | Path) 
 
 
 def write_hc(outputs: dict, base_dir: str | Path) -> None:
-    ABX_sim = outputs["abx_sim"]
-    post_sim = outputs["post_sim"]
-    post_sim_others = outputs["post_sim_others"]
 
-    ABX_sim_off = outputs["abx_sim_off"]
-    post_sim_off = outputs["post_sim_off"]
-    post_sim_others_off = outputs["post_sim_others_off"]
-
-    sims_new, sims_survived = calc_similarity_standard(post_sim, ABX_sim, post_sim_others)
-    sizes = []
-    for smp in post_sim_others:
-        sizes.append(np.size(np.nonzero(smp)))
-    sizes = np.array(sizes)
-    sims_new_off, sims_survived_off = calc_similarity_standard(post_sim_off, ABX_sim_off, post_sim_others_off)
-    sizes_off = []
-    for smp in post_sim_others_off:
-        sizes_off.append(np.size(np.nonzero(smp)))
-    sizes_off = np.array(sizes_off)
+    sizes = outputs["sizes"]
+    sizes_off = outputs["sizes_off"]
+    sims_new = outputs["sims_new"]
+    sims_new_off = outputs["sims_new_off"]
+    sims_survived = outputs["sims_survived"]
+    sims_survived_off = outputs["sims_survived_off"]
 
     # Save to CSV
     folder = base_dir#"C:/Users/USER/OneDrive/Desktop/Antibiotics/Results/"
@@ -220,4 +273,3 @@ def write_hc(outputs: dict, base_dir: str | Path) -> None:
     np.savetxt(full_path_survived, sims_survived, delimiter=",", fmt="%s")
     np.savetxt(full_path_new_off, sims_new_off, delimiter=",", fmt="%s")
     np.savetxt(full_path_survived_off, sims_survived_off, delimiter=",", fmt="%s")
-

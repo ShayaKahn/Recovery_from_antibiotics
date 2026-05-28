@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_survived_species_analysis(outputs, x_vals, x_labels, dir=None):
+def plot_survived_species_analysis(outputs, x_vals, x_labels, dir=None,
+                                   xticks_fontsize=100, ylable_fontsize=150, ytick_fontsize=120):
     results_matrix = np.array(10 ** outputs["results_matrix"])
     mean = 10 ** outputs["mean"]
 
@@ -14,12 +15,12 @@ def plot_survived_species_analysis(outputs, x_vals, x_labels, dir=None):
         ax.plot(x_vals, mean, linewidth=30, color='black')
 
         ax.set_xticks(x_vals)
-        ax.set_xticklabels(x_labels, fontsize=100, rotation=-90, color="black")
+        ax.set_xticklabels(x_labels, fontsize=xticks_fontsize, rotation=-90, color="black")
         ax.tick_params(axis='x', width=10, colors='black')
 
         ax.set_yscale('log')
-        ax.set_ylabel("Relative abundance", fontsize=150, labelpad=60, color="black")
-        ax.tick_params(axis='y', labelsize=120, width=10, colors='black')
+        ax.set_ylabel("Relative abundance", fontsize=ylable_fontsize, labelpad=60, color="black")
+        ax.tick_params(axis='y', labelsize=ytick_fontsize, width=10, colors='black')
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x:.0e}"))
 
         ax.spines['top'].set_visible(False)

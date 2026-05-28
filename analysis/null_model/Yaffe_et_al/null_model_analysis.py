@@ -4,10 +4,20 @@ from src.host_specific_recovery.visualizations.plot_null_model_analysis import p
 import numpy as np
 
 dataset = load_Yaffe_et_al_data()
-results_nm = run_null_model_analysis(dataset, timepoints_val=4)
+results_nm = run_null_model_analysis(dataset, timepoints_val=0)
+results_nm_slow = run_null_model_analysis(dataset, timepoints_val=4)
 order = np.load("C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/"
                                "Recovery_from_antibiotics/results/Yaffe_et_al/surrogate_data_analysis/order.npy")
+order_slow = np.load("C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/"
+                               "Recovery_from_antibiotics/results/Yaffe_et_al/surrogate_data_analysis/order_slow.npy")
 
 fig, ax = plot_NM_violin(outputs=results_nm, fig_size=(20, 4), sur_color="#787878", real_color="#1A72B780",
-                         custom_order=order, show_y=True, legend=True, ymin=None, ymax=None, dir=None)
-fig.show()
+                         custom_order=order, show_y=True, legend=True, ymin=None, ymax=None, dir=
+                         "C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/Recovery_from_antibiotics/results/"
+                         "Yaffe_et_al/null_model_analysis/nm_plot")
+
+fig_slow, ax_slow = plot_NM_violin(outputs=results_nm_slow, fig_size=(20, 4), sur_color="#787878",
+                                   real_color="#1A72B780", custom_order=order_slow, show_y=True, legend=True, ymin=None,
+                                   ymax=None, dir="C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/"
+                                                  "Recovery_from_antibiotics/results/Yaffe_et_al/"
+                                                  "null_model_analysis/nm_plot_slow")

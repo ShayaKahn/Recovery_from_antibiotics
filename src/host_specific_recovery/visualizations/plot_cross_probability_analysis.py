@@ -94,3 +94,52 @@ def plot_cross_species(outputs, title, color,  path=None):
         plt.savefig(path, dpi=300)
     else:
         plt.show()
+
+def scatter_with_identity(x, y, *, ax=None, s=50, alpha=0.7, color="black",
+                          xlabel="Log(Relative abundance | Colonized)",
+                          ylabel="Log(Relative abundance | Transient)",
+                          figsize=(5, 5), path=None):
+
+    x = np.asarray(np.log(x), dtype=float).ravel()
+    y = np.asarray(np.log(y), dtype=float).ravel()
+
+    if x.size != y.size:
+        raise ValueError(f"x and y must have same length ({x.size} != {y.size})")
+
+    m = np.isfinite(x) & np.isfinite(y)
+    x = x[m]
+    y = y[m]
+
+    if x.size == 0:
+        raise ValueError("No valid points to plot")
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+
+    ax.scatter(x, y, s=s, alpha=alpha, color=color)
+
+    gap = 0.5
+    lim_min = min(x.min() - gap, y.min() - gap)
+    lim_max = max(x.max() + gap, y.max() + gap)
+    ax.plot(
+        [lim_min, lim_max],
+        [lim_min, lim_max],
+        linestyle="--",
+        color="black",
+        linewidth=1.5
+    )
+
+    ax.set_xlim(lim_min, lim_max)
+    ax.set_ylim(lim_min, lim_max)
+
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+
+    ax.set_aspect("equal", adjustable="box")
+    ax.tick_params(axis='both', labelsize=14)
+
+    if path is not None:
+        plt.tight_layout()
+        plt.savefig(path, dpi=300)
+
+    return ax

@@ -1,13 +1,20 @@
 from src.host_specific_recovery.io.common import *
 from typing import Dict, List
 import os
+from Bio import Phylo
 
 def _build_filtered_keys() -> List[str]:
     return ["10", "18", "40", "57", "65", "77", "85", "108", "123", "5117", "15", "51", "72", "93", "105",
             "112", "122", "25", "38", "52", "67", "78", "89", "107", "118", "125", "140"]
 
+def _normalize_columns(df):
+    return df.div(df.sum(axis=0), axis=1)
+
 def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132/Data_csv"
                                 ) -> Dict[str, Optional[object]]:
+
+    tree = Phylo.read("C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132_tree/"
+                      "exported-tree/tree.nwk", "newick")
 
     # load data
     data = load_csv_df(os.path.join(dir, 'full_ASV_table.csv'), index_col=0)
@@ -21,6 +28,18 @@ def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/
     df_post_ABX_16 = load_csv_df(os.path.join(dir, 'day16_subjects.csv'), index_col=0)
     df_post_ABX_25 = load_csv_df(os.path.join(dir, 'day25_subjects.csv'), index_col=0)
     df_post_ABX = load_csv_df(os.path.join(dir, 'post_ABX_subjects.csv'), index_col=0)
+
+    data = _normalize_columns(data)
+    df_baseline_full = _normalize_columns(df_baseline_full)
+    df_post_full = _normalize_columns(df_post_full)
+    df_baseline = _normalize_columns(df_baseline)
+    df_ABX_3 = _normalize_columns(df_ABX_3)
+    df_ABX = _normalize_columns(df_ABX)
+    df_post_ABX_9 = _normalize_columns(df_post_ABX_9)
+    df_post_ABX_12 = _normalize_columns(df_post_ABX_12)
+    df_post_ABX_16 = _normalize_columns(df_post_ABX_16)
+    df_post_ABX_25 = _normalize_columns(df_post_ABX_25)
+    df_post_ABX = _normalize_columns(df_post_ABX)
 
     filtered_keys = _build_filtered_keys()
 
@@ -37,16 +56,15 @@ def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/
 
     keys = [t.split('_')[0] for t in total_cols]
 
-    # normalization
-    baseline_full_numpy = transpose_numeric(baseline_full, norm=True)
-    baseline_numpy = transpose_numeric(df_baseline, norm=True)
-    ABX_3_numpy = transpose_numeric(df_ABX_3, norm=True)
-    ABX_numpy = transpose_numeric(df_ABX, norm=True)
-    post_ABX_9_numpy = transpose_numeric(df_post_ABX_9, norm=True)
-    post_ABX_12_numpy = transpose_numeric(df_post_ABX_12, norm=True)
-    post_ABX_16_numpy = transpose_numeric(df_post_ABX_16, norm=True)
-    post_ABX_25_numpy = transpose_numeric(df_post_ABX_25, norm=True)
-    post_ABX_numpy = transpose_numeric(df_post_ABX, norm=True)
+    baseline_full_numpy = transpose_numeric(baseline_full, norm=False)
+    baseline_numpy = transpose_numeric(df_baseline, norm=False)
+    ABX_3_numpy = transpose_numeric(df_ABX_3, norm=False)
+    ABX_numpy = transpose_numeric(df_ABX, norm=False)
+    post_ABX_9_numpy = transpose_numeric(df_post_ABX_9, norm=False)
+    post_ABX_12_numpy = transpose_numeric(df_post_ABX_12, norm=False)
+    post_ABX_16_numpy = transpose_numeric(df_post_ABX_16, norm=False)
+    post_ABX_25_numpy = transpose_numeric(df_post_ABX_25, norm=False)
+    post_ABX_numpy = transpose_numeric(df_post_ABX, norm=False)
 
     times_post_abx = [4, 7, 11, 20, 32]
 
@@ -145,6 +163,8 @@ def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/
             post_25_control_numpy,
             post_control_numpy
         ],
+        
+        "tree": tree
     }
 
 def load_Messaoudene_et_al_functional_data() -> Dict[str, Optional[object]]:
@@ -161,6 +181,7 @@ def load_Messaoudene_et_al_functional_data() -> Dict[str, Optional[object]]:
     PATH = pd.read_csv("pathways_out/path_abun_unstrat.tsv.gz", sep="\t", index_col=0)
 
     return {
+        'metadata': metadata,
         'data': data,
         'rename_map': rename_map,
         'PATH_contrib_path': PATH_contrib_path,

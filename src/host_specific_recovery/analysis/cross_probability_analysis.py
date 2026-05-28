@@ -80,3 +80,46 @@ def run_cross_subject_probability_analysis(dataset: dict, B=10000, seed=0) -> di
         "abundances": abundances,
         "p_value": p_val
     }
+
+
+def run_cross_subject_probability_analysis_abundance(outputs_cross_subject: dict) -> dict:
+    """Collect complete-pair and pooled abundance values by taxon type.
+
+    Each value in ``outputs_cross_subject["abundances"]`` is expected to contain
+    returned-taxa abundances at index 0 and new-taxa abundances at index 1.
+    The paired matrices keep only taxa with both abundance values present, while
+    the pooled arrays keep all finite values.
+    """
+    abundances = outputs_cross_subject.get("abundances")
+    if abundances is None:
+        raise KeyError("outputs_cross_subject must contain an 'abundances' entry")
+
+    def collect_abundances(group_index):
+        complete_pairs = []
+        finite_values = []
+
+        for abundance_pair in abundances.values():
+            values = np.asarray(abundance_pair[group_index], dtype=float)
+            finite_mask = np.isfinite(values)
+
+            if np.all(finite_mask):
+                complete_pairs.append(values)
+
+            finite_values.extend(values[finite_mask])
+
+        if complete_pairs:
+            complete_pairs = np.vstack(complete_pairs)
+        else:
+            complete_pairs = np.empty((0, 2), dtype=float)
+
+        return complete_pairs, np.asarray(finite_values, dtype=float)
+
+    ret_taxa_abundances_mat, ret_taxa_abundances_all_mat = collect_abundances(group_index=0)
+    new_taxa_abundances_mat, new_taxa_abundances_all_mat = collect_abundances(group_index=1)
+
+    return {
+        "new_taxa_abundances": new_taxa_abundances_mat,
+        "new_taxa_abundances_all_mat": new_taxa_abundances_all_mat,
+        "ret_taxa_abundances": ret_taxa_abundances_mat,
+        "ret_taxa_abundances_all_mat": ret_taxa_abundances_all_mat
+    }

@@ -6,7 +6,7 @@ from src.host_specific_recovery.utils.general_utils import benjamini_hochberg, p
 from scipy.stats import binomtest
 
 def plot_SDA(outputs, fig_size, sur_color, real_color, show_y=True, legend=True, ymin=None, ymax=None, dir=None,
-             y_title='Standardized Jaccard similarity', naive=False):
+             y_title='Standardized Jaccard similarity', naive=False, std=True):
     """
     Plot SDA results.
     :param outputs: surrogate data analysis outputs dictionary
@@ -18,10 +18,15 @@ def plot_SDA(outputs, fig_size, sur_color, real_color, show_y=True, legend=True,
     :param ymin: minimum y-axis limit
     :param ymax: maximum y-axis limit
     :param dir: directory to save the figure, if None show the plot
+    :param y_title: y-axis title
+    :param naive: whether to use the naive similarity outputs
+    :param std: if True, plot standardized z-scores. If False, plot raw similarity values while still calculating
+                p-values from the observed z-scores.
     """
 
     # initialize lists
-    obs_norm, surr_norm = [], []
+    obs_raw, surr_raw = [], []
+    obs_z, surr_z = [], []
 
     if naive:
         sim = outputs["similarity_naive"]
@@ -30,17 +35,29 @@ def plot_SDA(outputs, fig_size, sur_color, real_color, show_y=True, legend=True,
         sim = outputs["similarity_mid"]
         sim_others = outputs["similarity_others_mid"]
 
-    # calculate standardized statistics
+    # calculate standardized statistics for p-values and significance decisions
     for obs, sur in zip(sim, sim_others):
         sur = np.asarray(sur, dtype=float)
         mu, sd = sur.mean(), sur.std(ddof=0)
-        surr_norm.append((sur - mu) / sd)
-        obs_norm.append((obs - mu) / sd)
+        surr_raw.append(sur)
+        obs_raw.append(obs)
+        surr_z.append((sur - mu) / sd)
+        obs_z.append((obs - mu) / sd)
 
-    obs_norm = np.asarray(obs_norm)
+    obs_raw = np.asarray(obs_raw, dtype=float)
+    obs_z = np.asarray(obs_z, dtype=float)
+
+    if std:
+        obs_plot = obs_z
+        surr_plot = surr_z
+    else:
+        obs_plot = obs_raw
+        surr_plot = surr_raw
+        if y_title == 'Standardized Jaccard similarity':
+            y_title = 'Jaccard similarity'
 
     # calculate p-values
-    z_scores = obs_norm.copy()
+    z_scores = obs_z.copy()
     pvals = 2 * (1 - norm.cdf(np.abs(z_scores)))
 
     # adjust p-values
@@ -50,18 +67,20 @@ def plot_SDA(outputs, fig_size, sur_color, real_color, show_y=True, legend=True,
     success_idx = []
     fail_idx = []
 
-    for i, (o, s, l) in enumerate(zip(obs_norm, surr_norm, pvals_labels)):
+    for i, (o, s, l) in enumerate(zip(obs_z, surr_z, pvals_labels)):
         if (o > s.max()) and (l != 'ns'):
             success_idx.append(i)
         else:
             fail_idx.append(i)
 
     # sort each group by descending observed z-score
-    success_idx.sort(key=lambda i: -obs_norm[i])
-    fail_idx.sort(key=lambda i: -obs_norm[i])
+    success_idx.sort(key=lambda i: -obs_z[i])
+    fail_idx.sort(key=lambda i: -obs_z[i])
     order = success_idx + fail_idx
-    obs_sorted = obs_norm[order]
-    surr_sorted = [surr_norm[i] for i in order]
+    obs_sorted = obs_plot[order]
+    surr_sorted = [surr_plot[i] for i in order]
+    obs_z_sorted = obs_z[order]
+    surr_z_sorted = [surr_z[i] for i in order]
     pvals_adj_sorted = pvals_adj[order]
     pvals_labels_sorted = [pvals_labels[i] for i in order]
 
@@ -83,7 +102,10 @@ def plot_SDA(outputs, fig_size, sur_color, real_color, show_y=True, legend=True,
     if show_y:
         ax.set_ylabel(y_title, fontsize=14)
         plt.yticks(fontsize=14)
-        ax.yaxis.set_major_locator(MultipleLocator(3))
+        if std:
+            ax.yaxis.set_major_locator(MultipleLocator(3))
+        else:
+            ax.yaxis.set_major_locator(MultipleLocator(0.2))
     else:
         ax.set_yticks([])
         ax.set_yticklabels([])
@@ -94,14 +116,16 @@ def plot_SDA(outputs, fig_size, sur_color, real_color, show_y=True, legend=True,
 
     if ymin is not None and ymax is not None:
         ax.set_ylim(ymin, ymax)
-        new_ymax = ymax + 2.25
+        label_padding = 2.25 if std else max((ymax - ymin) * 0.1, 0.05)
+        new_ymax = ymax + label_padding
         ax.set_ylim(ymin, new_ymax)
-        label_y = new_ymax - 0.2
+        label_y = new_ymax - (0.2 if std else label_padding * 0.1)
     else:
         ymin, ymax = ax.get_ylim()
-        new_ymax = ymax + 2.25
+        label_padding = 2.25 if std else max((ymax - ymin) * 0.1, 0.05)
+        new_ymax = ymax + label_padding
         ax.set_ylim(ymin, new_ymax)
-        label_y = new_ymax - 0.2
+        label_y = new_ymax - (0.2 if std else label_padding * 0.1)
 
     for xi, l in zip(x, pvals_labels_sorted):
         ax.text(xi, label_y, l, ha='center', va='top', fontsize=10, linespacing=0.6, clip_on=True)
@@ -120,14 +144,20 @@ def plot_SDA(outputs, fig_size, sur_color, real_color, show_y=True, legend=True,
         "order": order,
         "obs_sorted": obs_sorted,
         "surr_sorted": surr_sorted,
+        "obs_z_sorted": obs_z_sorted,
+        "surr_z_sorted": surr_z_sorted,
+        "z_scores": z_scores,
         "pvals_adj": pvals_adj,
         "pvals_labels": pvals_labels,
         "pvals_adj_sorted": pvals_adj_sorted,
-        "pvals_labels_sorted": pvals_labels_sorted
+        "pvals_labels_sorted": pvals_labels_sorted,
+        "success_idx": success_idx,
+        "fail_idx": fail_idx,
     }
 
-def plot_SDA_slow(outputs, significance, fig_size, sur_color, real_color, show_y=True,
-                  legend=True, ymin=None, ymax=None, dir=None):
+def plot_SDA_slow(outputs, success_idx_input, fail_idx_input, fig_size,
+                  sur_color, real_color, show_y=True, legend=True,
+                  ymin=None, ymax=None, dir=None):
     """
     Plot SDA results.
     :param outputs: surrogate data analysis outputs dictionary
@@ -170,12 +200,13 @@ def plot_SDA_slow(outputs, significance, fig_size, sur_color, real_color, show_y
 
     for i, (o, s, p) in enumerate(zip(obs_norm, surr_norm, pvals_adj)):
         label = p_to_label_one_sided(p)
-        if significance[i] == "ns":
-            fail_idx.append(i)
-        elif (label != "ns") and (significance[i] != "ns") and (o > np.max(s)):
-            success_idx.append(i)
+        if i in success_idx_input:
+            if (label != "ns") and (o > np.max(s)):
+                success_idx.append(i)
+            else:
+                near_idx.append(i)
         else:
-            near_idx.append(i)
+            fail_idx.append(i)
 
     success_idx.sort(key=lambda i: -obs_norm[i])
     near_idx.sort(key=lambda i: -obs_norm[i])

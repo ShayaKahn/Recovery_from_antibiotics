@@ -24,7 +24,8 @@ save_sda_plot_results(results_plot,
                       base_dir="C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/"
                                "Recovery_from_antibiotics/results/Palleja_et_al/surrogate_data_analysis")
 
-plot_SDA_slow(outputs=results_sda, significance=results_plot["pvals_labels"], fig_size=(3.1, 4),
+plot_SDA_slow(outputs=results_sda, success_idx_input=results_plot["success_idx"],
+              fail_idx_input=results_plot["fail_idx"], fig_size=(3.1, 4),
               sur_color="#8C2928", real_color="#51A246", show_y=False, legend=False, ymin=-4.082636696859447,
               ymax=8.431722910417848, dir=None)
 

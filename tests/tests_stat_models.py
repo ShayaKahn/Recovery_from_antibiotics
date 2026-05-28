@@ -3,12 +3,211 @@ from src.host_specific_recovery.statistical_models.surrogate import Surrogate
 from src.host_specific_recovery.statistical_models.similarity_correlation import SimilarityCorrelation
 from src.host_specific_recovery.statistical_models.functional_test import FunctionalTest, ApplyFunctionalTest
 from src.host_specific_recovery.statistical_models.unifrac_test import UnifracTest
+from src.host_specific_recovery.statistical_models.phylogenetic_test import PhylogeneticTest
+from src.host_specific_recovery.analysis.phylogenetic_analysis import run_phylogenetic_test
 from unittest import TestCase
 import numpy as np
 import pandas as pd
 from pandas.io.parsers.readers import TextFileReader
 from pathlib import Path
 from skbio import TreeNode
+
+
+class TestPhylogeneticTest(TestCase):
+    def setUp(self) -> None:
+        taxa = [
+            "lost",
+            "other_baseline",
+            "transient",
+            "last_only",
+            "colonizer",
+            "early_and_colonizer",
+            "baseline_partial",
+            "abx_present",
+        ]
+        self.base = pd.DataFrame(
+            {
+                "base_1": [1, 1, 0, 0, 0, 0, 1, 0],
+                "base_2": [1, 1, 0, 0, 0, 0, 0, 0],
+            },
+            index=taxa,
+        )
+        self.abx = pd.Series(
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            index=taxa,
+            name="abx_1",
+        )
+        self.post = pd.DataFrame(
+            {
+                "post_1": [0, 1, 0, 0, 1, 1, 0, 1],
+                "post_2": [0, 0, 1, 0, 1, 1, 0, 0],
+                "post_3": [0, 1, 0, 1, 1, 1, 1, 0],
+            },
+            index=taxa,
+        )
+        self.tree = (
+            "((lost:1,other_baseline:1):1,"
+            "(transient:1,(colonizer:1,early_and_colonizer:1):1):1)root;"
+        )
+        self.test = PhylogeneticTest(self.base, self.abx, self.post, self.tree)
+
+    def test_find_lost_species(self):
+        self.assertEqual(self.test.find_lost_species(), {"lost"})
+
+    def test_find_other_baseline(self):
+        self.assertEqual(self.test.find_other_baseline(), {"other_baseline"})
+
+    def test_find_transient(self):
+        self.assertEqual(self.test.find_transient(), {"transient"})
+
+    def test_find_colonizers(self):
+        self.assertEqual(self.test.find_colonizers(), {"colonizer", "early_and_colonizer"})
+
+    def test_find_species_categories(self):
+        self.assertEqual(
+            self.test.find_species_categories(),
+            {
+                "lost_species": {"lost"},
+                "other_baseline": {"other_baseline"},
+                "transient": {"transient"},
+                "colonizers": {"colonizer", "early_and_colonizer"},
+            },
+        )
+
+    def test_compute_unifrac_similarities(self):
+        similarities = self.test.compute_unifrac_similarities()
+
+        self.assertEqual(
+            set(similarities),
+            {
+                "colonizers_lost",
+                "colonizers_other_baseline",
+                "transient_lost",
+                "transient_other_baseline",
+                "lost_species_other_baseline",
+                "colonizers_transient",
+            },
+        )
+        self.assertEqual(similarities["colonizers_lost"], 0.0)
+        self.assertEqual(similarities["colonizers_other_baseline"], 0.0)
+        self.assertEqual(similarities["transient_lost"], 0.0)
+        self.assertEqual(similarities["transient_other_baseline"], 0.0)
+        self.assertAlmostEqual(similarities["lost_species_other_baseline"], 1 / 3)
+        self.assertAlmostEqual(similarities["colonizers_transient"], 0.2)
+
+    def test_unifrac_similarity_preserves_underscores_in_newick_taxa(self):
+        self.assertEqual(
+            self.test._unifrac_similarity_between_taxa_sets({"other_baseline"}, {"other_baseline"}),
+            1.0,
+        )
+
+    def test_accepts_single_baseline_sample(self):
+        one_baseline_sample = self.base["base_1"]
+        test = PhylogeneticTest(one_baseline_sample, self.abx, self.post, self.tree)
+
+        self.assertEqual(test.find_lost_species(), {"lost"})
+
+    def test_rejects_multiple_abx_samples(self):
+        abx_samples = pd.DataFrame(
+            {
+                "abx_1": self.abx,
+                "abx_2": self.abx,
+            }
+        )
+
+        with self.assertRaises(ValueError):
+            PhylogeneticTest(self.base, abx_samples, self.post, self.tree)
+
+
+class TestPhylogeneticAnalysis(TestCase):
+    def setUp(self) -> None:
+        self.taxa = [
+            "lost",
+            "other_baseline",
+            "transient",
+            "last_only",
+            "colonizer",
+            "early_and_colonizer",
+            "baseline_partial",
+            "abx_present",
+        ]
+        self.dataset = {
+            "filtered_keys": ["subject_a", "subject_b"],
+            "baseline_df": pd.DataFrame(
+                {
+                    "a_base": [1, 1, 0, 0, 0, 0, 0, 0],
+                    "b_base": [1, 1, 0, 0, 0, 0, 0, 0],
+                },
+                index=self.taxa,
+            ),
+            "baseline_full_df": pd.DataFrame(
+                {
+                    "full_1": [0, 0, 1, 1, 1, 1, 1, 1],
+                    "full_2": [0, 0, 1, 1, 1, 1, 1, 1],
+                },
+                index=self.taxa,
+            ),
+            "abx_df": pd.DataFrame(
+                {
+                    "a_abx": [0, 0, 0, 0, 0, 0, 0, 1],
+                    "b_abx": [0, 0, 0, 0, 0, 0, 0, 1],
+                },
+                index=self.taxa,
+            ),
+            "post_abx_cohorts_df": [
+                pd.DataFrame(
+                    {
+                        "a_post_1": [0, 1, 0, 0, 1, 1, 0, 1],
+                        "b_post_1": [0, 1, 0, 0, 1, 1, 0, 1],
+                    },
+                    index=self.taxa,
+                ),
+                pd.DataFrame(
+                    {
+                        "a_post_2": [0, 0, 1, 0, 1, 1, 0, 0],
+                        "b_post_2": [0, 0, 1, 0, 1, 1, 0, 0],
+                    },
+                    index=self.taxa,
+                ),
+                pd.DataFrame(
+                    {
+                        "a_post_3": [0, 1, 0, 1, 1, 1, 1, 0],
+                        "b_post_3": [0, 1, 0, 1, 1, 1, 1, 0],
+                    },
+                    index=self.taxa,
+                ),
+            ],
+            "tree": (
+                "((lost:1,other_baseline:1):1,"
+                "(transient:1,(colonizer:1,early_and_colonizer:1):1):1)root;"
+            ),
+        }
+
+    def test_run_phylogenetic_test(self):
+        outputs = run_phylogenetic_test(self.dataset)
+
+        self.assertEqual(set(outputs["results"]), {"subject_a", "subject_b"})
+        self.assertEqual(
+            outputs["results"]["subject_a"]["categories"],
+            {
+                "lost_species": {"lost"},
+                "other_baseline": {"other_baseline"},
+                "transient": {"transient"},
+                "colonizers": {"colonizer", "early_and_colonizer"},
+            },
+        )
+        self.assertListEqual(
+            list(outputs["unifrac_similarities"].columns),
+            [
+                "colonizers_lost",
+                "colonizers_other_baseline",
+                "transient_lost",
+                "transient_other_baseline",
+                "lost_species_other_baseline",
+                "colonizers_transient",
+            ],
+        )
+        self.assertEqual(outputs["unifrac_similarities"].shape, (2, 6))
 
 
 class TestFunctionalTest(TestCase):
