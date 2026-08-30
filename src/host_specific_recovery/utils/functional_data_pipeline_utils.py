@@ -178,3 +178,4 @@ def filter_valid_pairs(eff1, p1, eff2, p2, require_p_in_01: bool = True):
         m &= (0.0 <= p1) & (p1 <= 1.0) & (0.0 <= p2) & (p2 <= 1.0)
 
     return eff1[m], p1[m], eff2[m], p2[m]
+

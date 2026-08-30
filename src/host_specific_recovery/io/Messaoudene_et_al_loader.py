@@ -1,5 +1,5 @@
 from src.host_specific_recovery.io.common import *
-from typing import Dict, List
+from typing import Dict, List, Mapping, Sequence
 import os
 from Bio import Phylo
 
@@ -9,6 +9,54 @@ def _build_filtered_keys() -> List[str]:
 
 def _normalize_columns(df):
     return df.div(df.sum(axis=0), axis=1)
+
+
+def _align_sample_depths(
+        sample_depth_raw: pd.Series,
+        subject_ids: Sequence[str],
+        sample_columns_by_timepoint: Mapping[str, Sequence[str]],
+) -> pd.DataFrame:
+    """Align raw sample depths to the analyzed subjects and timepoints."""
+    if not sample_depth_raw.index.is_unique:
+        raise ValueError("sample_depth_raw must have unique sample names.")
+
+    subject_ids = [str(subject_id) for subject_id in subject_ids]
+    if len(set(subject_ids)) != len(subject_ids):
+        raise ValueError("subject_ids must be unique.")
+
+    aligned_depths = {}
+    for timepoint, sample_columns in sample_columns_by_timepoint.items():
+        sample_columns = list(sample_columns)
+        if len(sample_columns) != len(subject_ids):
+            raise ValueError(
+                f"{timepoint} must contain exactly {len(subject_ids)} samples."
+            )
+
+        sample_subject_ids = [str(name).split("_", 1)[0] for name in sample_columns]
+        if sample_subject_ids != subject_ids:
+            raise ValueError(
+                f"The sample order for {timepoint} does not match filtered_keys."
+            )
+
+        missing_names = [
+            name for name in sample_columns if name not in sample_depth_raw.index
+        ]
+        if missing_names:
+            missing = ", ".join(map(str, missing_names))
+            raise KeyError(
+                f"sample_depth_raw is missing required sample(s) for "
+                f"{timepoint}: {missing}."
+            )
+
+        aligned_depths[timepoint] = sample_depth_raw.loc[sample_columns].to_numpy()
+
+    sample_depth = pd.DataFrame(aligned_depths, index=subject_ids)
+    sample_depth.index.name = "subject_id"
+
+    values = sample_depth.to_numpy(dtype=float)
+    if not np.all(np.isfinite(values)) or np.any(values <= 0):
+        raise ValueError("All aligned sample depths must be positive and finite.")
+    return sample_depth
 
 def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132/Data_csv"
                                 ) -> Dict[str, Optional[object]]:
@@ -28,6 +76,7 @@ def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/
     df_post_ABX_16 = load_csv_df(os.path.join(dir, 'day16_subjects.csv'), index_col=0)
     df_post_ABX_25 = load_csv_df(os.path.join(dir, 'day25_subjects.csv'), index_col=0)
     df_post_ABX = load_csv_df(os.path.join(dir, 'post_ABX_subjects.csv'), index_col=0)
+    depth = data.iloc[:, 0].sum()
 
     data = _normalize_columns(data)
     df_baseline_full = _normalize_columns(df_baseline_full)
@@ -41,7 +90,51 @@ def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/
     df_post_ABX_25 = _normalize_columns(df_post_ABX_25)
     df_post_ABX = _normalize_columns(df_post_ABX)
 
+    # load data not rarifired
+    data_no_rar_path = os.path.join(dir, 'full_ASV_table_no_rarified.csv')
+    if not os.path.exists(data_no_rar_path):
+        # Backward compatibility with the original misspelled filename.
+        data_no_rar_path = os.path.join(dir, 'full_ASV_table_no_rerified.csv')
+    data_no_rar = load_csv_df(data_no_rar_path, index_col=0)
+    sample_depth_raw = data_no_rar.sum(axis=0)
+    df_baseline_full_no_rar = load_csv_df(os.path.join(dir, 'baseline_full_no_rarified.csv'), index_col=0)
+    df_post_full_no_rar = load_csv_df(os.path.join(dir, 'post_ABX_full_no_rarified.csv'), index_col=0)
+    df_baseline_no_rar = load_csv_df(os.path.join(dir, 'baseline_subjects_no_rarified.csv'), index_col=0)
+    df_ABX_3_no_rar = load_csv_df(os.path.join(dir, 'day3_subjects_no_rarified.csv'), index_col=0)
+    df_ABX_no_rar = load_csv_df(os.path.join(dir, 'ABX_subjects_no_rarified.csv'), index_col=0)
+    df_post_ABX_9_no_rar = load_csv_df(os.path.join(dir, 'day9_subjects_no_rarified.csv'), index_col=0)
+    df_post_ABX_12_no_rar = load_csv_df(os.path.join(dir, 'day12_subjects_no_rarified.csv'), index_col=0)
+    df_post_ABX_16_no_rar = load_csv_df(os.path.join(dir, 'day16_subjects_no_rarified.csv'), index_col=0)
+    df_post_ABX_25_no_rar = load_csv_df(os.path.join(dir, 'day25_subjects_no_rarified.csv'), index_col=0)
+    df_post_ABX_no_rar = load_csv_df(os.path.join(dir, 'post_ABX_subjects_no_rarified.csv'), index_col=0)
+
+    data_no_rar = _normalize_columns(data_no_rar)
+    df_baseline_full_no_rar = _normalize_columns(df_baseline_full_no_rar)
+    df_post_full_no_rar = _normalize_columns(df_post_full_no_rar)
+    df_baseline_no_rar = _normalize_columns(df_baseline_no_rar)
+    df_ABX_3_no_rar = _normalize_columns(df_ABX_3_no_rar)
+    df_ABX_no_rar = _normalize_columns(df_ABX_no_rar)
+    df_post_ABX_9_no_rar = _normalize_columns(df_post_ABX_9_no_rar)
+    df_post_ABX_12_no_rar = _normalize_columns(df_post_ABX_12_no_rar)
+    df_post_ABX_16_no_rar = _normalize_columns(df_post_ABX_16_no_rar)
+    df_post_ABX_25_no_rar = _normalize_columns(df_post_ABX_25_no_rar)
+    df_post_ABX_no_rar = _normalize_columns(df_post_ABX_no_rar)
+
     filtered_keys = _build_filtered_keys()
+    sample_depth = _align_sample_depths(
+        sample_depth_raw,
+        filtered_keys,
+        {
+            "baseline": df_baseline_no_rar.columns,
+            "abx_3": df_ABX_3_no_rar.columns,
+            "abx": df_ABX_no_rar.columns,
+            "post_abx_9": df_post_ABX_9_no_rar.columns,
+            "post_abx_12": df_post_ABX_12_no_rar.columns,
+            "post_abx_16": df_post_ABX_16_no_rar.columns,
+            "post_abx_25": df_post_ABX_25_no_rar.columns,
+            "post_abx": df_post_ABX_no_rar.columns,
+        },
+    )
 
     matched_cols = []
     for key in filtered_keys:
@@ -53,6 +146,7 @@ def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/
     total_cols = matched_cols + remaining_cols
 
     baseline_full = df_baseline_full[total_cols]
+    baseline_full_no_rar = df_baseline_full_no_rar[total_cols]
 
     keys = [t.split('_')[0] for t in total_cols]
 
@@ -65,6 +159,16 @@ def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/
     post_ABX_16_numpy = transpose_numeric(df_post_ABX_16, norm=False)
     post_ABX_25_numpy = transpose_numeric(df_post_ABX_25, norm=False)
     post_ABX_numpy = transpose_numeric(df_post_ABX, norm=False)
+
+    baseline_full_no_rar_numpy = transpose_numeric(baseline_full_no_rar, norm=False)
+    baseline_no_rar_numpy = transpose_numeric(df_baseline_no_rar, norm=False)
+    ABX_3_no_rar_numpy = transpose_numeric(df_ABX_3_no_rar, norm=False)
+    ABX_no_rar_numpy = transpose_numeric(df_ABX_no_rar, norm=False)
+    post_ABX_9_no_rar_numpy = transpose_numeric(df_post_ABX_9_no_rar, norm=False)
+    post_ABX_12_no_rar_numpy = transpose_numeric(df_post_ABX_12_no_rar, norm=False)
+    post_ABX_16_no_rar_numpy = transpose_numeric(df_post_ABX_16_no_rar, norm=False)
+    post_ABX_25_no_rar_numpy = transpose_numeric(df_post_ABX_25_no_rar, norm=False)
+    post_ABX_no_rar_numpy = transpose_numeric(df_post_ABX_no_rar, norm=False)
 
     times_post_abx = [4, 7, 11, 20, 32]
 
@@ -128,8 +232,30 @@ def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/
             df_post_ABX_25,
             df_post_ABX
         ],
+
+        "data_no_rar": data_no_rar,
+        "baseline_full_df_no_rar": baseline_full_no_rar,
+        "post_full_df_no_rar": df_post_full_no_rar,
+        "baseline_df_no_rar": df_baseline_no_rar,
+        "abx_3_df_no_rar": df_ABX_3_no_rar,
+        "abx_df_no_rar": df_ABX_no_rar,
+        "abx_cohorts_df_no_rar": [df_ABX_3_no_rar, df_ABX_no_rar],
+        "post_abx_9_df_no_rar": df_post_ABX_9_no_rar,
+        "post_abx_12_df_no_rar": df_post_ABX_12_no_rar,
+        "post_abx_16_df_no_rar": df_post_ABX_16_no_rar,
+        "post_abx_25_df_no_rar": df_post_ABX_25_no_rar,
+        "post_abx_df_no_rar": df_post_ABX_no_rar,
+        "post_abx_cohorts_df_no_rar": [
+            df_post_ABX_9_no_rar,
+            df_post_ABX_12_no_rar,
+            df_post_ABX_16_no_rar,
+            df_post_ABX_25_no_rar,
+            df_post_ABX_no_rar
+        ],
+
         "filtered_keys": filtered_keys,
         "keys": keys,
+
         "baseline_full": baseline_full_numpy,
         "baseline": baseline_numpy,
         "abx_3": ABX_3_numpy,
@@ -147,6 +273,25 @@ def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/
             post_ABX_25_numpy,
             post_ABX_numpy
         ],
+
+        "baseline_full_no_rar": baseline_full_no_rar_numpy,
+        "baseline_no_rar": baseline_no_rar_numpy,
+        "abx_3_no_rar": ABX_3_no_rar_numpy,
+        "abx_no_rar": ABX_no_rar_numpy,
+        "abx_cohorts_no_rar": [ABX_3_no_rar_numpy, ABX_no_rar_numpy],
+        "post_abx_9_no_rar": post_ABX_9_no_rar_numpy,
+        "post_abx_12_no_rar": post_ABX_12_no_rar_numpy,
+        "post_abx_16_no_rar": post_ABX_16_no_rar_numpy,
+        "post_abx_25_no_rar": post_ABX_25_no_rar_numpy,
+        "post_abx_no_rar": post_ABX_no_rar_numpy,
+        "post_abx_cohorts_no_rar": [
+            post_ABX_9_no_rar_numpy,
+            post_ABX_12_no_rar_numpy,
+            post_ABX_16_no_rar_numpy,
+            post_ABX_25_no_rar_numpy,
+            post_ABX_no_rar_numpy
+        ],
+
         "times_post_abx": times_post_abx,
         "baseline_control": base_control_numpy,
         "abx3_control": ABX3_control_numpy,
@@ -164,7 +309,10 @@ def load_Messaoudene_et_al_data(dir="C:/Users/USER/OneDrive/Desktop/Antibiotics/
             post_control_numpy
         ],
         
-        "tree": tree
+        "tree": tree,
+        "depth": depth,
+        "sample_depth": sample_depth,
+        "sample_depth_raw": sample_depth_raw
     }
 
 def load_Messaoudene_et_al_functional_data() -> Dict[str, Optional[object]]:

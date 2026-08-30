@@ -1,9 +1,119 @@
-from src.host_specific_recovery.statistical_models.surrogate import Surrogate
 from src.host_specific_recovery.utils.surrogate_data_analysis_utils import create_cohort_dict
 import numpy as np
-from scipy.stats import binom, binomtest
+import pandas as pd
+from scipy.stats import binom, binomtest, norm
+from statsmodels.stats.multitest import multipletests
+
+
+def calculate_sda_statistics(
+        observed_similarities,
+        reference_similarities,
+        subject_ids=None,
+        alpha=0.05,
+) -> pd.DataFrame:
+    """Calculate subject-level SDA statistics from reference similarities.
+
+    The definitions match ``plot_SDA``: reference standard deviation uses
+    ``ddof=0``; p-values are two-sided normal probabilities and are adjusted
+    across subjects with Benjamini-Hochberg. A result is significant only when
+    its adjusted p-value is at most ``alpha`` and its observed similarity is
+    greater than every reference similarity.
+
+    Raw rank uses 1 as the best possible rank. ``normalized_rank`` uses 1 for
+    best and 0 for worst, which makes ranks comparable across reference-pool
+    sizes. A zero reference standard deviation produces an undefined (NaN)
+    standardized similarity and a non-significant result.
+    """
+    observed_similarities = np.asarray(observed_similarities, dtype=float)
+    if observed_similarities.ndim == 0:
+        observed_similarities = observed_similarities.reshape(1)
+    if observed_similarities.ndim != 1:
+        raise ValueError("observed_similarities must be a one-dimensional sequence.")
+
+    reference_similarities = list(reference_similarities)
+    if len(reference_similarities) != observed_similarities.size:
+        raise ValueError(
+            "reference_similarities must contain one sequence per observed similarity."
+        )
+    if not isinstance(alpha, (int, float)) or not 0 < alpha < 1:
+        raise ValueError("alpha must be a number in the interval (0, 1).")
+
+    if subject_ids is None:
+        subject_ids = np.arange(observed_similarities.size)
+    else:
+        subject_ids = np.asarray(list(subject_ids), dtype=object)
+        if subject_ids.ndim != 1 or subject_ids.size != observed_similarities.size:
+            raise ValueError("subject_ids must contain one identifier per subject.")
+
+    rows = []
+    for subject_id, observed, references in zip(
+            subject_ids,
+            observed_similarities,
+            reference_similarities,
+    ):
+        references = np.asarray(references, dtype=float)
+        if references.ndim != 1 or references.size == 0:
+            raise ValueError(
+                f"Reference similarities for subject {subject_id!r} must be a non-empty "
+                "one-dimensional sequence."
+            )
+        if not np.isfinite(observed) or not np.all(np.isfinite(references)):
+            raise ValueError(
+                f"Similarities for subject {subject_id!r} must contain only finite values."
+            )
+
+        reference_mean = float(references.mean())
+        reference_std = float(references.std(ddof=0))
+        if reference_std == 0:
+            standardized_similarity = np.nan
+            p_value = np.nan
+        else:
+            standardized_similarity = float(
+                (observed - reference_mean) / reference_std
+            )
+            p_value = float(
+                2 * (1 - norm.cdf(abs(standardized_similarity)))
+            )
+
+        n_references = int(references.size)
+        n_references_below_observed = int(np.count_nonzero(observed > references))
+        rank = n_references + 1 - n_references_below_observed
+
+        rows.append({
+            "subject_id": subject_id,
+            "observed_similarity": float(observed),
+            "reference_mean_similarity": reference_mean,
+            "reference_std_similarity": reference_std,
+            "n_references": n_references,
+            "rank": int(rank),
+            "normalized_rank": float(
+                n_references_below_observed / n_references
+            ),
+            "standardized_similarity": standardized_similarity,
+            "p_value": p_value,
+            "observed_exceeds_all_references": bool(
+                observed > references.max()
+            ),
+        })
+
+    statistics = pd.DataFrame(rows)
+    statistics["adjusted_p_value"] = np.nan
+    finite_p_values = np.isfinite(statistics["p_value"].to_numpy(dtype=float))
+    if np.any(finite_p_values):
+        statistics.loc[finite_p_values, "adjusted_p_value"] = multipletests(
+            statistics.loc[finite_p_values, "p_value"].to_numpy(dtype=float),
+            alpha=alpha,
+            method="fdr_bh",
+        )[1]
+    statistics["is_significant"] = (
+        (statistics["adjusted_p_value"] <= alpha)
+        & statistics["observed_exceeds_all_references"]
+    )
+    return statistics
 
 def run_surrogate_analysis(dataset: dict, timepoints_val:int,  method: str = "Jaccard") -> dict:
+    from src.host_specific_recovery.statistical_models.surrogate import Surrogate
+
     # initialize results
     results = []
     results_obj = []
@@ -61,13 +171,16 @@ def run_surrogate_analysis(dataset: dict, timepoints_val:int,  method: str = "Ja
         sim_others_mid.append([res_mid[key] for key in keys if key != specific_key])
         sim_others_naive.append([res_naive[key] for key in keys if key != specific_key])
 
-    # calculate the ranks
-    ranks = np.array([len(keys) - np.sum((sim_val > sim_val_others)
-                                         ) for sim_val, sim_val_others in zip(sim, sim_others)])
-    ranks_mid = np.array([len(keys) - np.sum((sim_val > sim_val_others)
-                                             ) for sim_val, sim_val_others in zip(sim_mid, sim_others_mid)])
-    ranks_naive = np.array([len(keys) - np.sum((sim_val > sim_val_others)
-                                               ) for sim_val, sim_val_others in zip(sim_naive, sim_others_naive)])
+    statistics = calculate_sda_statistics(sim, sim_others, filtered_keys)
+    statistics_mid = calculate_sda_statistics(sim_mid, sim_others_mid, filtered_keys)
+    statistics_naive = calculate_sda_statistics(
+        sim_naive,
+        sim_others_naive,
+        filtered_keys,
+    )
+    ranks = statistics["rank"].to_numpy(dtype=int)
+    ranks_mid = statistics_mid["rank"].to_numpy(dtype=int)
+    ranks_naive = statistics_naive["rank"].to_numpy(dtype=int)
 
     return {
         "results": results,
@@ -84,7 +197,10 @@ def run_surrogate_analysis(dataset: dict, timepoints_val:int,  method: str = "Ja
         "similarity_others_naive": sim_others_naive,
         "ranks": ranks,
         "ranks_mid": ranks_mid,
-        "ranks_naive": ranks_naive
+        "ranks_naive": ranks_naive,
+        "statistics": statistics,
+        "statistics_mid": statistics_mid,
+        "statistics_naive": statistics_naive,
     }
 
 def run_binomial_test(surrogate_outputs, alpha=0.9):

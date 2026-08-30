@@ -25,15 +25,14 @@ symmetric = False
 alpha = None
 method = 'RK45'
 multiprocess = True
-switch_off = False
 n_jobs = 6
 numpy_seed = 48
 random_seed = 98
 
 outputs = run_HC_simulation(num_samples, pool_size, num_survived_min, num_survived_max, mean, sigma, c, delta,
                             final_time, max_step, epsilon, threshold, min_growth, max_growth, symmetric,
-                            alpha, method, multiprocess, switch_off, n_jobs, numpy_seed, random_seed)
+                            alpha, method, multiprocess, n_jobs, numpy_seed, random_seed)
 
 write_hc(outputs,"C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/"
                  "Recovery_from_antibiotics/results/GLV_simulation/")
-
+print(0)

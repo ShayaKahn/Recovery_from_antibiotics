@@ -6,6 +6,7 @@ from src.host_specific_recovery.visualizations.plot_species_proportions_heatmap_
 
 dataset = load_Sewunet_et_al_data()
 outputs = run_species_proportios_heatmap_analysis(dataset, tau=2)
-plot_proportions_heatmap(outputs)
+plot_proportions_heatmap(outputs, weighted=True,
+                         path="C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/Recovery_from_antibiotics/results/Sewunet_et_al/proportions_heatmap/weighted.png")
 plot_pie_chart(outputs, weighted=True)
 plot_pie_chart(outputs, weighted=False)

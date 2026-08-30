@@ -6,7 +6,7 @@ import random
 
 def run_HC_simulation(num_samples, pool_size, num_survived_min, num_survived_max, mean, sigma, c, delta,
                       final_time, max_step, epsilon, threshold, min_growth, max_growth, symmetric, alpha, method,
-                      multiprocess, switch_off, n_jobs, numpy_seed, random_seed):
+                      multiprocess, n_jobs, numpy_seed, random_seed):
 
     # define random seeds
     np.random.seed(numpy_seed)
@@ -15,7 +15,7 @@ def run_HC_simulation(num_samples, pool_size, num_survived_min, num_survived_max
     # No switch off
     HC_object = HC(num_samples, pool_size, num_survived_min, num_survived_max, mean, sigma, c, delta,
                    final_time, max_step, epsilon, threshold, min_growth, max_growth, symmetric,
-                   alpha, method, multiprocess, switch_off, n_jobs)
+                   alpha, method, multiprocess, False, False, n_jobs)
     results = HC_object.get_results()
 
     base_sim = results["Y_0"]
@@ -28,7 +28,7 @@ def run_HC_simulation(num_samples, pool_size, num_survived_min, num_survived_max
     random.seed(random_seed)
     HC_object_off = HC(num_samples, pool_size, num_survived_min, num_survived_max, mean, sigma, c, delta,
                        final_time, max_step, epsilon, threshold, min_growth, max_growth, symmetric,
-                       alpha, method, multiprocess, True, n_jobs)
+                       alpha, method, multiprocess, True, True, n_jobs)
     results_off = HC_object_off.get_results()
 
     base_sim_off = results_off["Y_0"]

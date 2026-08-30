@@ -5,6 +5,13 @@ from src.host_specific_recovery.io.writers import save_sda_results, save_sda_plo
 
 dataset = load_Palleja_et_al_data()
 results_sda = run_surrogate_analysis(dataset, timepoints_val=1)
+results_sda_rjsd = run_surrogate_analysis(dataset, timepoints_val=1, method='jensenshannon')
+
+dir_rjsd = "C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/Recovery_from_antibiotics/results/Palleja_et_al/surrogate_data_analysis/sda_rjsd_no_std"
+
+plot_SDA(outputs=results_sda_rjsd, fig_size=(3.1, 4), sur_color="#8C2928", real_color="#51A246", ymin=-0.05,
+         show_y=False, legend=False, ymax=1, dir=dir_rjsd, y_title='rJSD similarity',
+         naive=True, std=False)
 
 save_sda_results(outputs=results_sda, base_dir="C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/"
                                "Recovery_from_antibiotics/results/Palleja_et_al/surrogate_data_analysis")

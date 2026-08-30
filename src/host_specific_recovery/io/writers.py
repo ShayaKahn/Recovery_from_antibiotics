@@ -34,6 +34,12 @@ def save_sda_results(outputs: dict, base_dir: str | Path) -> None:
             similarities_naive.append(s)
 
     np.save(base_dir / "similarities_naive.npy", similarities_naive)
+    np.save(base_dir / "similarity.npy", np.array(outputs["similarity"]))
+    np.save(base_dir / "similarity_others.npy", np.array(outputs["similarity_others"]))
+    np.save(base_dir / "similarity_mid.npy", np.array(outputs["similarity_mid"]))
+    np.save(base_dir / "similarity_others_mid.npy", np.array(outputs["similarity_others_mid"]))
+    np.save(base_dir / "similarity_naive.npy", np.array(outputs["similarity_naive"]))
+    np.save(base_dir / "similarity_others_naive.npy", np.array(outputs["similarity_others_naive"]))
     np.save(base_dir / "ranks.npy", np.array(outputs["ranks"]))
     np.save(base_dir / "ranks_mid.npy", np.array(outputs["ranks_mid"]))
     np.save(base_dir / "ranks_naive.npy", np.array(outputs["ranks_naive"]))
@@ -157,6 +163,46 @@ def save_subject_species_probability_results(outputs: dict, base_dir: str | Path
     with open(file_path, 'wb') as f:
         pickle.dump({'probs': probs, 'abundances': abundances}, f)
 
+
+def save_functional_data_pipeline_prepare_results(outputs: dict, base_dir: str | Path) -> None:
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    with open(base_dir / "M_base_no_lost_taxa_lst_PATH.pkl", 'wb') as f:
+        pickle.dump(outputs["M_base_no_lost_taxa_lst_PATH"], f)
+
+    with open(base_dir / "M_lost_taxa_lst_PATH.pkl", 'wb') as f:
+        pickle.dump(outputs["M_lost_taxa_lst_PATH"], f)
+
+    with open(base_dir / "M_new_taxa_lst_PATH.pkl", 'wb') as f:
+        pickle.dump(outputs["M_new_taxa_lst_PATH"], f)
+
+    with open(base_dir / "M_new_taxa_lst_PATH_dict.pkl", 'wb') as f:
+        pickle.dump(outputs["M_new_taxa_lst_PATH_dict"], f)
+
+    if "fun_redundancy_lst" in outputs:
+        fun_redundancy = np.asarray(outputs["fun_redundancy_lst"], dtype=float)
+        if fun_redundancy.ndim == 1:
+            fun_redundancy = fun_redundancy[:, np.newaxis]
+        sample_labels = [f"sample_{i}" for i in range(fun_redundancy.shape[1])]
+        np.save(base_dir / "fun_redundancy_lst.npy", fun_redundancy)
+        pd.DataFrame(fun_redundancy, columns=sample_labels).to_csv(
+            base_dir / "fun_redundancy_lst.csv",
+            index=False,
+        )
+
+    if "specificity_similarity_lst" in outputs:
+        specificity_similarity = np.asarray(outputs["specificity_similarity_lst"], dtype=float)
+        if specificity_similarity.ndim == 1:
+            specificity_similarity = specificity_similarity[:, np.newaxis]
+        sample_labels = [f"sample_{i}" for i in range(specificity_similarity.shape[1])]
+        np.save(base_dir / "specificity_similarity_lst.npy", specificity_similarity)
+        pd.DataFrame(specificity_similarity, columns=sample_labels).to_csv(
+            base_dir / "specificity_similarity_lst.csv",
+            index=False,
+        )
+
+
 def save_functional_data_pipeline_analysis_results(outputs: dict, base_dir: str | Path) -> None:
     base_dir = Path(base_dir)
     base_dir.mkdir(parents=True, exist_ok=True)
@@ -167,6 +213,8 @@ def save_functional_data_pipeline_analysis_results(outputs: dict, base_dir: str 
     np.save(base_dir / "AUC_mean_colon_transient_vs_base_valid.npy", outputs["AUC_mean_colon_transient_vs_base_valid"])
     np.save(base_dir / "adjusted_pvalues_mean_colon_transient_vs_base_valid.npy",
             outputs["adjusted_pvalues_mean_colon_transient_vs_base_valid"])
+    np.save(base_dir / "fun_redundancy_valid.npy", outputs["fun_redundancy_valid"])
+    np.save(base_dir / "mean_S_lost_base_valid.npy", outputs["mean_S_lost_base_valid"])
 
     outputs["AUC_mean_colon_transient_vs_lost_valid_subjects"].to_csv(
         base_dir / "AUC_mean_colon_transient_vs_lost_valid_subjects.csv",
@@ -184,6 +232,14 @@ def save_functional_data_pipeline_analysis_results(outputs: dict, base_dir: str 
         base_dir / "adjusted_pvalues_mean_colon_transient_vs_base_valid_subjects.csv",
         header=True,
     )
+    outputs["fun_redundancy_valid_subjects"].to_csv(
+        base_dir / "fun_redundancy_valid_subjects.csv",
+        header=True,
+    )
+    outputs["mean_S_lost_base_valid_subjects"].to_csv(
+        base_dir / "mean_S_lost_base_valid_subjects.csv",
+        header=True,
+    )
     outputs["valid_subject_results"].to_csv(base_dir / "valid_subject_results.csv")
 
     with open(base_dir / "S_lost_colon.pkl", 'wb') as f:
@@ -191,6 +247,9 @@ def save_functional_data_pipeline_analysis_results(outputs: dict, base_dir: str 
 
     with open(base_dir / "S_lost_transient_comb.pkl", 'wb') as f:
         pickle.dump(outputs["S_lost_transient_comb"], f)
+
+    with open(base_dir / "S_lost_base.pkl", 'wb') as f:
+        pickle.dump(outputs["S_lost_base"], f)
 
     with open(base_dir / "S_base_colon.pkl", 'wb') as f:
         pickle.dump(outputs["S_base_colon"], f)
@@ -242,34 +301,40 @@ def save_survived_species_analysis_results(outputs: dict, base_dir: str | Path) 
     np.save(base_dir / "mean.npy", outputs["mean"])
 
 
-def write_hc(outputs: dict, base_dir: str | Path) -> None:
+def write_hc(outputs: dict, base_dir: str | Path, model_name: str = "glv") -> None:
 
     sizes = outputs["sizes"]
-    sizes_off = outputs["sizes_off"]
     sims_new = outputs["sims_new"]
-    sims_new_off = outputs["sims_new_off"]
     sims_survived = outputs["sims_survived"]
-    sims_survived_off = outputs["sims_survived_off"]
 
     # Save to CSV
     folder = base_dir#"C:/Users/USER/OneDrive/Desktop/Antibiotics/Results/"
-    filename = "sizes_glv_test.csv"
-    filename_off = "sizes_glv_off_test.csv"
-    filename_new = "sims_new_glv_test.csv"
-    filename_survived = "sims_survived_glv_test.csv"
-    filename_new_off = "sims_new_glv_off_test.csv"
-    filename_survived_off = "sims_survived_glv_off_test.csv"
+    os.makedirs(folder, exist_ok=True)
+    filename = f"sizes_{model_name}_test_.csv"
+    filename_new = f"sims_new_{model_name}_test_.csv"
+    filename_survived = f"sims_survived_{model_name}_test_.csv"
 
     full_path = os.path.join(folder, filename)
-    full_path_off = os.path.join(folder, filename_off)
     full_path_new = os.path.join(folder, filename_new)
     full_path_survived = os.path.join(folder, filename_survived)
-    full_path_new_off = os.path.join(folder, filename_new_off)
-    full_path_survived_off = os.path.join(folder, filename_survived_off)
 
     np.savetxt(full_path, sizes, delimiter=",", fmt="%s")
-    np.savetxt(full_path_off, sizes_off, delimiter=",", fmt="%s")
     np.savetxt(full_path_new, sims_new, delimiter=",", fmt="%s")
     np.savetxt(full_path_survived, sims_survived, delimiter=",", fmt="%s")
-    np.savetxt(full_path_new_off, sims_new_off, delimiter=",", fmt="%s")
-    np.savetxt(full_path_survived_off, sims_survived_off, delimiter=",", fmt="%s")
+
+    if model_name != "cr":
+        sizes_off = outputs["sizes_off"]
+        sims_new_off = outputs["sims_new_off"]
+        sims_survived_off = outputs["sims_survived_off"]
+
+        filename_off = f"sizes_{model_name}_off_test_.csv"
+        filename_new_off = f"sims_new_{model_name}_off_test_.csv"
+        filename_survived_off = f"sims_survived_{model_name}_off_test_.csv"
+
+        full_path_off = os.path.join(folder, filename_off)
+        full_path_new_off = os.path.join(folder, filename_new_off)
+        full_path_survived_off = os.path.join(folder, filename_survived_off)
+
+        np.savetxt(full_path_off, sizes_off, delimiter=",", fmt="%s")
+        np.savetxt(full_path_new_off, sims_new_off, delimiter=",", fmt="%s")
+        np.savetxt(full_path_survived_off, sims_survived_off, delimiter=",", fmt="%s")

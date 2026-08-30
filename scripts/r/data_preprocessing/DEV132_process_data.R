@@ -13,6 +13,10 @@ data <- data %>% remove_rownames %>% column_to_rownames(var="#OTU ID")
 # convert values to numeric
 data <- data %>% mutate(across(everything(), ~ as.numeric(as.character(.x))))
 
+write.csv(data, 
+          file = 'C:/Users/USER/OneDrive/Desktop/Antibiotics/DAV132/full_ASV_table_no_rerified.csv',
+          row.names = TRUE)
+
 # rarefraction curve
 
 cols_rr_plot <- grep("Day1_", names(data))

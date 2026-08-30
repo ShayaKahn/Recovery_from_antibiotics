@@ -11,6 +11,12 @@ plot_SDA(outputs=results_sda_rjsd, fig_size=(9, 4), sur_color="#8C2928", real_co
          std=False)#, #base_dir="C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/"
                     #           "Recovery_from_antibiotics/results/Messaoudene_et_al/surrogate_data_analysis")
 
+base_dir="C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/Recovery_from_antibiotics/results/Messaoudene_et_al/surrogate_data_analysis/sda_rjsd_no_std"
+
+plot_SDA(outputs=results_sda_rjsd, fig_size=(9, 4), sur_color="#8C2928", real_color="#51A246", ymin=-0.05,
+         ymax=1., dir=base_dir, y_title='rJSD similarity', naive=True, show_y=False, legend=False,
+         std=False)
+
 results_sda = run_surrogate_analysis(dataset, timepoints_val=2)
 
 save_sda_results(outputs=results_sda, base_dir="C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/"
@@ -20,7 +26,6 @@ results_binom_test = run_binomial_test(results_sda)
 
 plot_SDA(outputs=results_sda, fig_size=(9, 4), sur_color="#8C2928", real_color="#51A246", ymin=-4.9314556423269575,
          ymax=10.899442828117659, dir=None, y_title='Standardized Jaccard similarity', naive=True)
-
 
 results_plot = plot_SDA(outputs=results_sda, fig_size=(9.25, 4), sur_color="#8C2928",
                                                  real_color="#51A246", show_y=False, legend=False,

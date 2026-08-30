@@ -22,7 +22,7 @@ save_sda_results(outputs=results_sda, base_dir="C:/Users/USER/OneDrive/Desktop/R
 results_binom_test = run_binomial_test(results_sda)
 
 plot_SDA(outputs=results_sda, fig_size=(22, 4), sur_color="#8C2928", real_color="#51A246", ymin=-5,
-         show_y=False, legend=False, ymax=20, dir=None, y_title='Standardized Jaccard similarity', naive=True)
+         show_y=False, legend=False, ymax=20, dir=None, y_title='Standardized Jaccard similarity', naive=False)
 
 results_plot = plot_SDA(outputs=results_sda, fig_size=(22, 4), sur_color="#8C2928", real_color="#51A246",
                         ymin=-5, ymax=20, dir="C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/"

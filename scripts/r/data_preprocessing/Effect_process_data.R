@@ -33,6 +33,8 @@ df_mat_rar <- t(df_mat_transposed_rar)
 df_rar <- as.data.frame(df_mat_rar)
 df <- df_rar
 
+write.xlsx(df, "C:/Users/USER/OneDrive/Desktop/Antibiotics/Effect of tebipenem/data_rarified.xlsx")
+
 # normalization
 column_sums <- colSums(df)
 normalized_df <- sweep(df, 2, column_sums, "/")

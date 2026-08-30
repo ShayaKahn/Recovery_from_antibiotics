@@ -5,6 +5,147 @@ import pandas as pd
 import networkx as nx
 
 
+def plot_functional_redundancy_over_time(fun_redundancy, sample_labels=None, timepoint_labels=None,
+                                         path: str | None = None, dpi: int = 300, figsize=(6, 5),
+                                         subject_color="0.75",
+                                         mean_color="black", subject_alpha=0.55, subject_lw=1.0,
+                                         mean_lw=3.0, fontsize=16, ticksize=12):
+    """
+    Plot functional redundancy trajectories for all subjects and their mean.
+
+    :param fun_redundancy: Subject-by-time array-like functional redundancy values.
+    :param sample_labels: Optional labels for the time axis.
+    :param timepoint_labels: Optional labels for the time axis. Preferred alias for sample_labels.
+    :param path: Path to save the figure. If None, display the figure.
+    :param dpi: DPI for saving the figure.
+    :param figsize: Figure size.
+    :param subject_color: Color for individual subject trajectories.
+    :param mean_color: Color for the mean trajectory.
+    :param subject_alpha: Alpha for individual subject trajectories.
+    :param subject_lw: Line width for individual subject trajectories.
+    :param mean_lw: Line width for mean trajectory.
+    :param fontsize: Axis label font size.
+    :param ticksize: Tick label font size.
+    :return: Matplotlib Axes object.
+    """
+    fun_redundancy = np.asarray(fun_redundancy, dtype=float)
+    if fun_redundancy.ndim == 1:
+        fun_redundancy = fun_redundancy[:, np.newaxis]
+    if fun_redundancy.ndim != 2:
+        raise ValueError("fun_redundancy must be a 1D or 2D array-like object.")
+    if fun_redundancy.shape[0] == 0 or fun_redundancy.shape[1] == 0:
+        raise ValueError("fun_redundancy must contain at least one subject and one time point.")
+
+    n_time = fun_redundancy.shape[1]
+    if timepoint_labels is not None:
+        if sample_labels is not None:
+            raise ValueError("Use either sample_labels or timepoint_labels, not both.")
+        sample_labels = timepoint_labels
+    if sample_labels is None:
+        sample_labels = [str(i) for i in range(n_time)]
+    if len(sample_labels) != n_time:
+        raise ValueError(f"sample_labels has {len(sample_labels)} labels for {n_time} time points.")
+
+    x = np.arange(n_time)
+    mean_redundancy = np.nanmean(fun_redundancy, axis=0)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    for subject_values in fun_redundancy:
+        ax.plot(x, subject_values, color=subject_color, alpha=subject_alpha, lw=subject_lw)
+    ax.plot(x, mean_redundancy, color=mean_color, lw=mean_lw, label="Mean")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(sample_labels, rotation=45, ha="right")
+    ax.set_ylabel("Functional redundancy", fontsize=fontsize)
+    ax.tick_params(axis="both", which="major", labelsize=ticksize)
+    #ax.legend(frameon=False, fontsize=ticksize)
+
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.5)
+
+    fig.tight_layout()
+    if path is not None:
+        fig.savefig(path, dpi=dpi, bbox_inches="tight")
+    else:
+        plt.show()
+    return ax
+
+
+def plot_functional_specificity_over_time(functional_specificity, sample_labels=None, timepoint_labels=None,
+                                          path: str | None = None, dpi: int = 300, figsize=(6, 5),
+                                          subject_color="0.75",
+                                          mean_color="black", subject_alpha=0.55, subject_lw=1.0,
+                                          mean_lw=3.0, fontsize=16, ticksize=12, ylim=(0.0, 1.0),
+                                          y_min: float | None = None):
+    """
+    Plot functional specificity trajectories for all subjects and their mean.
+
+    :param functional_specificity: Subject-by-time array-like specificity values.
+    :param sample_labels: Optional labels for the time axis.
+    :param timepoint_labels: Optional labels for the time axis. Preferred alias for sample_labels.
+    :param path: Path to save the figure. If None, display the figure.
+    :param dpi: DPI for saving the figure.
+    :param figsize: Figure size.
+    :param subject_color: Color for individual subject trajectories.
+    :param mean_color: Color for the mean trajectory.
+    :param subject_alpha: Alpha for individual subject trajectories.
+    :param subject_lw: Line width for individual subject trajectories.
+    :param mean_lw: Line width for mean trajectory.
+    :param fontsize: Axis label font size.
+    :param ticksize: Tick label font size.
+    :param ylim: Optional y-axis limits. Set to None to use Matplotlib defaults.
+    :param y_min: Optional y-axis lower limit. Overrides the lower value in ylim.
+    :return: Matplotlib Axes object.
+    """
+    functional_specificity = np.asarray(functional_specificity, dtype=float)
+    if functional_specificity.ndim == 1:
+        functional_specificity = functional_specificity[:, np.newaxis]
+    if functional_specificity.ndim != 2:
+        raise ValueError("functional_specificity must be a 1D or 2D array-like object.")
+    if functional_specificity.shape[0] == 0 or functional_specificity.shape[1] == 0:
+        raise ValueError("functional_specificity must contain at least one subject and one time point.")
+
+    n_time = functional_specificity.shape[1]
+    if timepoint_labels is not None:
+        if sample_labels is not None:
+            raise ValueError("Use either sample_labels or timepoint_labels, not both.")
+        sample_labels = timepoint_labels
+    if sample_labels is None:
+        sample_labels = [str(i) for i in range(n_time)]
+    if len(sample_labels) != n_time:
+        raise ValueError(f"sample_labels has {len(sample_labels)} labels for {n_time} time points.")
+
+    x = np.arange(n_time)
+    mean_specificity = np.nanmean(functional_specificity, axis=0)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    for subject_values in functional_specificity:
+        ax.plot(x, subject_values, color=subject_color, alpha=subject_alpha, lw=subject_lw)
+    ax.plot(x, mean_specificity, color=mean_color, lw=mean_lw, label="Mean")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(sample_labels, rotation=45, ha="right")
+    ax.set_ylabel("Functional specificity", fontsize=fontsize)
+    if ylim is not None:
+        y_low, y_high = ylim
+        if y_min is not None:
+            y_low = y_min
+        ax.set_ylim(y_low, y_high)
+    elif y_min is not None:
+        ax.set_ylim(bottom=y_min)
+    ax.tick_params(axis="both", which="major", labelsize=ticksize)
+
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.5)
+
+    fig.tight_layout()
+    if path is not None:
+        fig.savefig(path, dpi=dpi, bbox_inches="tight")
+    else:
+        plt.show()
+    return ax
+
+
 def plot_two_hists_with_auc(A, B, bins="fd", n_bins: int | None = None, density=True, alpha=0.35,
                             colors=("#ff6a3a", "#a62a0d"), labels=("A", "B"),
                             xlabel="Mean Weighted Jaccard similarity", ylabel="Density", x_fontsize=20,
@@ -91,7 +232,8 @@ def plot_similarity_network(S_AC: pd.DataFrame, S_BC: pd.DataFrame, S_AD: pd.Dat
                             threshold_quantile: float = 0.9, node_size: int = 3000, figsize=(9, 13),
                             A_color="#ff6a3a", B_color="#a62a0d", C_color="#66aa00",
                             D_color="#1f77b4", auto_y: bool = True, gap: float = 0.02, gap_AB: float = 0.1,
-                            gap_CD: float = 0.0,  shuffle: bool = True, seed: int | None = 1, path: str | None = None,):
+                            gap_CD: float = 0.0,  shuffle: bool = True, seed: int | None = 1,
+                            path: str | None = None, hide_set: str | None = None):
 
     if not S_AC.columns.equals(S_BC.columns):
         raise ValueError("S_AC.columns and S_BC.columns must be identical (same C taxa, same order).")
@@ -106,6 +248,9 @@ def plot_similarity_network(S_AC: pd.DataFrame, S_BC: pd.DataFrame, S_AD: pd.Dat
         raise ValueError("gap_CD must be in [0, 1).")
     if not auto_y:
         raise ValueError("auto_y=False not supported in this version.")
+    valid_hide_sets = {None, "A", "B", "C", "D"}
+    if hide_set not in valid_hide_sets:
+        raise ValueError("hide_set must be one of None, 'A', 'B', 'C', or 'D'.")
 
     A = list(map(str, S_AC.index))
     B = list(map(str, S_BC.index))
@@ -264,12 +409,33 @@ def plot_similarity_network(S_AC: pd.DataFrame, S_BC: pd.DataFrame, S_AD: pd.Dat
     fig, ax = plt.subplots(figsize=figsize)
     ax.axis("off")
 
-    nx.draw_networkx_nodes(G, pos, nodelist=A_nodes, node_size=node_size, node_color=A_color, ax=ax)
-    nx.draw_networkx_nodes(G, pos, nodelist=B_nodes, node_size=node_size, node_color=B_color, ax=ax)
-    nx.draw_networkx_nodes(G, pos, nodelist=C_nodes, node_size=node_size, node_color=C_color, ax=ax)
-    nx.draw_networkx_nodes(G, pos, nodelist=D_nodes, node_size=node_size, node_color=D_color, ax=ax)
+    hide_parts = {
+        None: set(),
+        "A": {"A"},
+        "B": {"B"},
+        "C": {"C"},
+        "D": {"D"},
+    }[hide_set]
+    hidden_nodes = {node for part in hide_parts for node in {
+        "A": A_nodes,
+        "B": B_nodes,
+        "C": C_nodes,
+        "D": D_nodes,
+    }[part]}
+
+    visible_A_nodes = [node for node in A_nodes if node not in hidden_nodes]
+    visible_B_nodes = [node for node in B_nodes if node not in hidden_nodes]
+    visible_C_nodes = [node for node in C_nodes if node not in hidden_nodes]
+    visible_D_nodes = [node for node in D_nodes if node not in hidden_nodes]
+
+    nx.draw_networkx_nodes(G, pos, nodelist=visible_A_nodes, node_size=node_size, node_color=A_color, ax=ax)
+    nx.draw_networkx_nodes(G, pos, nodelist=visible_B_nodes, node_size=node_size, node_color=B_color, ax=ax)
+    nx.draw_networkx_nodes(G, pos, nodelist=visible_C_nodes, node_size=node_size, node_color=C_color, ax=ax)
+    nx.draw_networkx_nodes(G, pos, nodelist=visible_D_nodes, node_size=node_size, node_color=D_color, ax=ax)
 
     for (u, v), lw, a in zip(G.edges(), widths, alphas):
+        if u in hidden_nodes or v in hidden_nodes:
+            continue
         nx.draw_networkx_edges(G, pos, edgelist=[(u, v)], width=float(lw), alpha=float(a), ax=ax)
 
     plt.tight_layout()

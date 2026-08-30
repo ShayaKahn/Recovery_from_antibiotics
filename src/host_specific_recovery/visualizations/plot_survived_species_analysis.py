@@ -12,7 +12,7 @@ def plot_survived_species_analysis(outputs, x_vals, x_labels, dir=None,
 
         ax.plot(x_vals, row, linewidth=15, color='#7f7f7f')
 
-        ax.plot(x_vals, mean, linewidth=30, color='black')
+        #ax.plot(x_vals, mean, linewidth=30, color='black')
 
         ax.set_xticks(x_vals)
         ax.set_xticklabels(x_labels, fontsize=xticks_fontsize, rotation=-90, color="black")

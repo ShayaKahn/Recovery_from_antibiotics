@@ -1,7 +1,10 @@
+# cython: language_level=3
 import numpy as np
 cimport numpy as cnp
 from libc.stdlib cimport rand, srand
 from libc.time cimport time
+
+cnp.import_array()
 
 def generate_samples(cnp.ndarray[cnp.float64_t, ndim=1] pool,
                      cnp.ndarray[cnp.int32_t, ndim=1] indices, int stop, num_reals, size):

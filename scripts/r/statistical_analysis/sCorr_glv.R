@@ -6,13 +6,22 @@ source("C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/Recovery_from_a
 #### sCorr version 2 plots for the GLV model ####
 
 # Load data
-sims_new <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Antibiotics/Results/sims_new_glv_test.csv", header = FALSE)))
-sims_survived <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Antibiotics/Results/sims_survived_glv_test.csv", header = FALSE)))
-sizes <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Antibiotics/Results/sizes_glv_test.csv", header = FALSE)))
+#sims_new <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Antibiotics/Results/sims_new_glv_test.csv", header = FALSE)))
+#sims_survived <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Antibiotics/Results/sims_survived_glv_test.csv", header = FALSE)))
+#sizes <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Antibiotics/Results/sizes_glv_test.csv", header = FALSE)))
 
 sims_new_off <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Antibiotics/Results/sims_new_glv_off_test.csv", header = FALSE)))
 sims_survived_off <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Antibiotics/Results/sims_survived_glv_off_test.csv", header = FALSE)))
 sizes_off <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Antibiotics/Results/sizes_glv_off_test.csv", header = FALSE)))
+
+sims_new <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/Recovery_from_antibiotics/results/GLV_simulation/sims_new_glv_test_.csv", header = FALSE)))
+sims_survived <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/Recovery_from_antibiotics/results/GLV_simulation/sims_survived_glv_test_.csv", header = FALSE)))
+sizes <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/Recovery_from_antibiotics/results/GLV_simulation/sizes_glv_test_.csv", header = FALSE)))
+
+#sims_new_off <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/Recovery_from_antibiotics/results/GLV_simulation/sims_new_glv_off_test_.csv", header = FALSE)))
+#sims_survived_off <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/Recovery_from_antibiotics/results/GLV_simulation/sims_survived_glv_off_test_.csv", header = FALSE)))
+#sizes_off <- drop(as.matrix(read.csv("C:/Users/USER/OneDrive/Desktop/Recovery_from_antibiotics/Recovery_from_antibiotics/results/GLV_simulation/sizes_glv_off_test_.csv", header = FALSE)))
+
 
 # Residual correlation plot
 data <- data.frame(x = sims_survived, y = sims_new, z = sizes)

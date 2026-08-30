@@ -24,10 +24,13 @@ class HC:
     __slots__ = ('num_samples', 'pool_size', 'num_survived_min', 'num_survived_max', 'mean', 'sigma', 'c', 'delta',
                  'final_time', 'max_step', 'epsilon', 'eta', 'min_growth', 'max_growth', 'symmetric', 'alpha',
                  'method', 'multiprocess', 'switch_off', 'n_jobs', 'A', 's', 'r', 'num_survived_list', 'Y_0', 'Y_p',
-                 'event_not_satisfied_ind', 'test_idx', 'y_s', 'y', 'Y_s', 'event_not_satisfied_ind_Y_s')
-    def __init__(self, num_samples, pool_size, num_survived_min, num_survived_max, mean, sigma, c, delta, final_time,
-                 max_step, epsilon, eta, min_growth, max_growth, symmetric=True, alpha=None, method='RK45',
-                 multiprocess=True, switch_off=False, n_jobs=4):
+                 'event_not_satisfied_ind', 'test_idx', 'y_s', 'y', 'Y_s', 'event_not_satisfied_ind_Y_s',
+                 'switch_off_test_only')
+    def __init__(self, num_samples, pool_size, num_survived_min,
+                 num_survived_max, mean, sigma, c, delta, final_time,
+                 max_step, epsilon, eta, min_growth, max_growth, symmetric=True, alpha=None,
+                 method='RK45', multiprocess=True, switch_off=False, switch_off_test_only=False,
+                 n_jobs=4):
         """
         Inputs:
         num_samples: The number of samples.
@@ -57,10 +60,15 @@ class HC:
          self.delta, self.final_time,
          self.max_step, self.epsilon, self.eta, self.min_growth, self.max_growth, self.symmetric, self.alpha,
          self.method, self.multiprocess,
-         self.switch_off, self.n_jobs) = HC._validate_inputs(num_samples, pool_size, num_survived_min, num_survived_max,
-                                                             mean, sigma, c, delta, final_time, max_step, epsilon,
-                                                             eta, min_growth, max_growth, symmetric, alpha,
-                                                             method, multiprocess, switch_off, n_jobs)
+         self.switch_off, self.switch_off_test_only, self.n_jobs) = HC._validate_inputs(num_samples, pool_size,
+                                                                                        num_survived_min,
+                                                                                        num_survived_max, mean, sigma,
+                                                                                        c, delta, final_time, max_step,
+                                                                                        epsilon, eta, min_growth,
+                                                                                        max_growth, symmetric, alpha,
+                                                                                        method, multiprocess,
+                                                                                        switch_off,
+                                                                                        switch_off_test_only, n_jobs)
         # create the interaction matrix
         self.A = self._create_full_interaction_matrix()
         # create the logistic growth vector
@@ -89,13 +97,29 @@ class HC:
         # normalize Y_s
         self.Y_s = self._normalize_cohort(self._insert_total_pool_others())
         # apply the GLV model to Y_s
-        if self.switch_off:
-            self.Y_s, self.event_not_satisfied_ind_Y_s = self._apply_GLV_with_switched_off_interactions(
-                self.Y_s, Y_s_phi
+        #if self.switch_off:
+        #    self.Y_s, self.event_not_satisfied_ind_Y_s = self._apply_GLV_with_switched_off_interactions(
+        #        self.Y_s, Y_s_phi
+        #    )
+        #else:
+        #    self.Y_s, self.event_not_satisfied_ind_Y_s = self._apply_GLV(self.Y_s, norm=True, int_mat=self.A,
+        #                                                            n_samples=self.Y_s.shape[0], n_jobs=self.n_jobs)
+
+        if self.switch_off and not self.switch_off_test_only:
+            self.Y_s, self.event_not_satisfied_ind_Y_s = (
+                self._apply_GLV_with_switched_off_interactions(
+                    self.Y_s, Y_s_phi
+                )
             )
         else:
-            self.Y_s, self.event_not_satisfied_ind_Y_s = self._apply_GLV(self.Y_s, norm=True, int_mat=self.A,
-                                                                    n_samples=self.Y_s.shape[0], n_jobs=self.n_jobs)
+            self.Y_s, self.event_not_satisfied_ind_Y_s = self._apply_GLV(
+                self.Y_s,
+                norm=True,
+                int_mat=self.A,
+                n_samples=self.Y_s.shape[0],
+                n_jobs=self.n_jobs
+            )
+
         self.Y_s = np.delete(self.Y_s, self.event_not_satisfied_ind_Y_s, axis=0)
         # remove the low abundances
         self.Y_s = self._remove_low_abundances(self.Y_s)
@@ -103,7 +127,7 @@ class HC:
     @staticmethod
     def _validate_inputs(num_samples, pool_size, num_survived_min, num_survived_max, mean, sigma, c, delta, final_time,
                          max_step, epsilon, eta, min_growth, max_growth, symmetric, alpha, method, multiprocess,
-                         switch_off, n_jobs):
+                         switch_off, switch_off_test_only, n_jobs):
         if not (isinstance(num_samples, int) and isinstance(pool_size, int) and
                 isinstance(num_survived_min, int) and isinstance(num_survived_max, int)):
             raise ValueError("num_samples, pool_size, num_survived_min, and num_survived_max must be integers.")
@@ -151,11 +175,13 @@ class HC:
             raise ValueError("symmetric must be of type bool.")
         if not isinstance(switch_off, bool):
             raise ValueError("switch_off must be of type bool.")
+        if not isinstance(switch_off_test_only, bool):
+            raise ValueError("switch_off_test_only must be of type bool.")
         if not (isinstance(n_jobs, int)):
             raise ValueError("n_jobs must be of type int.")
         return (num_samples, pool_size, num_survived_min, num_survived_max, mean, sigma, c, delta, final_time,
                 max_step, epsilon, eta, min_growth, max_growth, symmetric, alpha, method, multiprocess,
-                switch_off, n_jobs)
+                switch_off, switch_off_test_only, n_jobs)
 
     def _set_interaction_matrix(self):
         """This method sets the interaction matrix.
@@ -246,26 +272,56 @@ class HC:
             y[s] = np.random.rand(1, self.num_survived_list[index])
         return Y_0
 
+    #def _generate_y_s(self, y, phi):
+    #    """This method generates the post perturbed state for the test sample.
+    #    Inputs:
+    #    y: The test sample.
+    #    phi: Boolean mask marking the species present before inserting the total pool.
+    #    Returns:
+    #    # y_s: Numpy matrix that represent the post perturbed state.
+    #    # event_not_satisfied_ind_y_s: The indices of the samples that the steady state condition is not satisfied."""
+
+    #    if self.switch_off:
+    #        # switch off the effect of the perturbed species on the new inserted species and vice versa
+    #        A_copy = self.A.copy()
+    #        A_switch = self._switch_off_interactions(A_copy, phi)
+    #        # apply the GLV model
+    #        y_s, event_not_satisfied_ind_y_s = self._apply_GLV(y[None, :], norm=True, int_mat=A_switch,
+    #                                                           n_samples=1, n_jobs=None)
+    #    else:
+    #        # apply the GLV model
+    #        y_s, event_not_satisfied_ind_y_s = self._apply_GLV(y[None, :], norm=True, int_mat=self.A,
+    #                                                           n_samples=1, n_jobs=None)
+    #    return y_s, event_not_satisfied_ind_y_s
+
     def _generate_y_s(self, y, phi):
-        """This method generates the post perturbed state for the test sample.
+        """
+        This method generates the post perturbed state for the test sample.
         Inputs:
         y: The test sample.
         phi: Boolean mask marking the species present before inserting the total pool.
         Returns:
-        # y_s: Numpy matrix that represent the post perturbed state.
-        # event_not_satisfied_ind_y_s: The indices of the samples that the steady state condition is not satisfied."""
-
+        y_s: Numpy matrix that represent the post perturbed state.
+        event_not_satisfied_ind_y_s: The indices of the samples that the steady state condition is not satisfied."""
         if self.switch_off:
-            # switch off the effect of the perturbed species on the new inserted species and vice versa
             A_copy = self.A.copy()
             A_switch = self._switch_off_interactions(A_copy, phi)
-            # apply the GLV model
-            y_s, event_not_satisfied_ind_y_s = self._apply_GLV(y[None, :], norm=True, int_mat=A_switch,
-                                                               n_samples=1, n_jobs=None)
+            y_s, event_not_satisfied_ind_y_s = self._apply_GLV(
+                y[None, :],
+                norm=True,
+                int_mat=A_switch,
+                n_samples=1,
+                n_jobs=None
+            )
         else:
-            # apply the GLV model
-            y_s, event_not_satisfied_ind_y_s = self._apply_GLV(y[None, :], norm=True, int_mat=self.A,
-                                                               n_samples=1, n_jobs=None)
+            y_s, event_not_satisfied_ind_y_s = self._apply_GLV(
+                y[None, :],
+                norm=True,
+                int_mat=self.A,
+                n_samples=1,
+                n_jobs=None
+            )
+
         return y_s, event_not_satisfied_ind_y_s
 
     def _set_int_strength_matrix(self):

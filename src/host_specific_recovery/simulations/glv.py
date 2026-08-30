@@ -8,7 +8,8 @@ class Glv:
     """This class is responsible to solve the GLV model with verification of reaching the steady state
     for a given parameters."""
 
-    def __init__(self, n_samples, n_species, delta, r, s, interaction_matrix, initial_cond, final_time, max_step,
+    def __init__(self, n_samples, n_species, delta, r, s, interaction_matrix,
+                 initial_cond, final_time, max_step,
                  normalize=True, method='RK45', multiprocess=True, n_jobs=4):
         """
         Inputs:
@@ -33,7 +34,8 @@ class Glv:
                                                                             multiprocess, n_jobs)
 
     @ staticmethod
-    def _validate_input(n_samples, n_species, delta, r, s, interaction_matrix, initial_cond, final_time, max_step,
+    def _validate_input(n_samples, n_species, delta, r, s, interaction_matrix,
+                        initial_cond, final_time, max_step,
                         normalize, method, multiprocess, n_jobs):
         # Check if n_samples and n_species are integers greater than 0
         if not isinstance(n_samples, int) or n_samples <= 0:

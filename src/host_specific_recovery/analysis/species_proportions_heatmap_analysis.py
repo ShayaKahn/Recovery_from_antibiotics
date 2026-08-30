@@ -1,7 +1,8 @@
 from src.host_specific_recovery.utils.general_utils import subset
 import numpy as np
 
-def species_proportions(baseline_spm, abx_smp, post_matrix, tau, strict=False, weighted=False):
+def species_proportions(baseline_spm, abx_smp, post_matrix, tau, strict=False,
+                        weighted=False):
     """
     This function calculates the proportions of species that survived, new, returned, and emerged during antibiotics.
     :param baseline_spm: Numpy array representing the baseline state of shape (#taxa, ) or (#baseline samples, #taxa).
@@ -33,6 +34,15 @@ def species_proportions(baseline_spm, abx_smp, post_matrix, tau, strict=False, w
     n_late = returned_late.sum()
     n_survived = survived.sum()
     n_emerged = emerged.sum()
+
+    print(" ")
+    print("n_new", n_new)
+    print("n_early", n_early)
+    print("n_late", n_late)
+    print("n_survived", n_survived)
+    print("n_emerged", n_emerged)
+    print(" ")
+    print("n_total", post.astype(bool).sum())
 
     if strict:
         s = n_new + n_early + n_late + n_survived + n_emerged

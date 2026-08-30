@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository contains Python code for analyzing recovery patterns of the gut microbiota after antibiotic perturbation. It includes reusable analysis modules, dataset-specific analysis scripts, simulation code, plotting utilities, and tests used to support the accompanying manuscript.
+This repository contains Python code for analyzing recovery patterns of the gut microbiota after antibiotic perturbation. It includes reusable analysis and machine-learning modules, dataset-specific analysis scripts, simulation code, plotting utilities, and tests used to support the accompanying manuscript.
 
 The project focuses on questions such as whether microbiota recovery is personalized, whether recovery can be explained by random sampling from a baseline cohort, and whether surviving species after antibiotic treatment influence later community assembly.
 
@@ -80,6 +80,7 @@ Dataset-specific scripts are located under `analysis/`. These scripts are intend
 
 ```text
 src/host_specific_recovery/   Core Python package
+src/host_specific_recovery/ML_models/   Microbiome regression models
 analysis/                     Dataset-specific analysis scripts
 scripts/                      External workflow and helper scripts
 tests/                        Unit tests
@@ -98,6 +99,42 @@ cython_modules/               Cython extensions and compiled modules
 | Historical contingency simulation | Simulates how post-antibiotic community assembly can depend on species that survived treatment. | `src/host_specific_recovery/simulations/historical_contingency.py` |
 | Functional analysis | Analyzes functional recovery patterns using predicted metagenomic contribution data. | `src/host_specific_recovery/statistical_models/functional_test.py` |
 | UniFrac analysis | Tests recovery patterns using phylogenetic distance. | `src/host_specific_recovery/statistical_models/unifrac_test.py` |
+| Microbiome random forest regression | Predicts continuous recovery outcomes from taxonomic, functional, and metadata features, with microbiome-aware preprocessing, cross-validation, optional hyperparameter search, and feature importance. | `src/host_specific_recovery/ML_models/random_forest.py` |
+
+## Microbiome Random Forest Regression
+
+`MicrobiomeRandomForestRegressor` accepts a pandas DataFrame whose columns use one or more of the following prefixes:
+
+- `taxonomic__` for taxonomic abundance features
+- `functional__` for functional abundance features
+- `metadata__` for continuous, binary, or categorical subject metadata
+
+Microbial features can be prevalence-filtered and transformed using `none`, `log`, or `clr`. Metadata are imputed and encoded according to their data type. The model also supports grid or randomized hyperparameter search, repeated cross-validation, out-of-fold predictions, and ranked feature importance.
+
+```python
+from src.host_specific_recovery.ML_models.random_forest import (
+    MicrobiomeRandomForestRegressor,
+)
+
+X = baseline_abundance_table.T.add_prefix("taxonomic__")
+y = recovery_scores
+
+model = MicrobiomeRandomForestRegressor(
+    min_prevalence=0.3,
+    transform="clr",
+    n_estimators=1000,
+    min_samples_leaf=2,
+    max_features="sqrt",
+    random_state=0,
+)
+
+model.fit(X, y)
+predictions = model.predict(X)
+cv_summary = model.evaluate_cv(X, y, n_splits=5, n_repeats=20)
+important_features = model.feature_importance(top_n=20)
+```
+
+For standardized surrogate data analysis (SDA) targets, set `avoid_target_leakage=True` and provide `similarity_mid`, `similarity_others_mid`, and, when necessary, `sample_similarity_indices`. In this mode, `evaluate_cv_predictions` recalculates the target inside each external cross-validation split so held-out subjects are excluded from the surrogate comparison distribution.
 
 ## Analysis Scripts
 
@@ -111,6 +148,7 @@ analysis/similarity_correlation/
 analysis/survived_species_analysis/
 analysis/assembly_times_analysis/
 analysis/historical_contingency_simulation/
+analysis/SDA_regression/
 ```
 
 Each analysis directory contains dataset-specific scripts, such as `Messaoudene_et_al`, `Palleja_et_al`, `Sewunet_et_al`, and `Yaffe_et_al` where applicable.
@@ -119,6 +157,12 @@ Example command:
 
 ```sh
 python analysis/null_model/Yaffe_et_al/null_model_analysis.py
+```
+
+The Yaffe et al. standardized-Jaccard regression workflow, including random forest regression, is located at:
+
+```text
+analysis/SDA_regression/Yaffe_et_al/standardized_jaccard_regression.py
 ```
 
 Some scripts expect local input data files and output directories. See the data availability section before running manuscript-level analyses.

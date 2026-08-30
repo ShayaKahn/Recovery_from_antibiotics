@@ -1,6 +1,9 @@
+# cython: language_level=3
 import numpy as np
 cimport numpy as cnp
 from libc.stdlib cimport rand
+
+cnp.import_array()
 
 def _create_synthetic_cohort(cnp.ndarray[cnp.float64_t, ndim=2] cohort):
     """
