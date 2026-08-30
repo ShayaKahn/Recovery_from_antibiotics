@@ -98,33 +98,31 @@ cython_modules/               Cython extensions and compiled modules
 | Similarity correlation | Tests relationships between surviving species and newly appearing species after treatment. | `src/host_specific_recovery/statistical_models/similarity_correlation.py` |
 | Historical contingency simulation | Simulates how post-antibiotic community assembly can depend on species that survived treatment. | `src/host_specific_recovery/simulations/historical_contingency.py` |
 | Functional analysis | Analyzes functional recovery patterns using predicted metagenomic contribution data. | `src/host_specific_recovery/statistical_models/functional_test.py` |
-| UniFrac analysis | Tests recovery patterns using phylogenetic distance. | `src/host_specific_recovery/statistical_models/unifrac_test.py` |
-| Microbiome random forest regression | Predicts continuous recovery outcomes from taxonomic, functional, and metadata features, with microbiome-aware preprocessing, cross-validation, optional hyperparameter search, and feature importance. | `src/host_specific_recovery/ML_models/random_forest.py` |
+| Regularized linear regression | Primary machine-learning model for predicting continuous recovery outcomes from taxonomic, functional, and metadata features. Supports Lasso, Ridge, and Elastic Net regression with microbiome-aware preprocessing, cross-validation, optional hyperparameter search, and coefficient interpretation. | `src/host_specific_recovery/ML_models/linear_regression.py` |
 
-## Microbiome Random Forest Regression
+## Primary Machine-Learning Model: Regularized Linear Regression
 
-`MicrobiomeRandomForestRegressor` accepts a pandas DataFrame whose columns use one or more of the following prefixes:
+`MicrobiomeRegularizedLinearRegressor` is the project's main machine-learning model. It accepts a pandas DataFrame whose columns use one or more of the following prefixes:
 
 - `taxonomic__` for taxonomic abundance features
 - `functional__` for functional abundance features
 - `metadata__` for continuous, binary, or categorical subject metadata
 
-Microbial features can be prevalence-filtered and transformed using `none`, `log`, or `clr`. Metadata are imputed and encoded according to their data type. The model also supports grid or randomized hyperparameter search, repeated cross-validation, out-of-fold predictions, and ranked feature importance.
+Microbial features can be prevalence-filtered and transformed using `none`, `log`, or `clr`. Metadata are imputed and encoded according to their data type. The estimator supports Lasso, Ridge, and Elastic Net regularization, as well as grid or randomized hyperparameter search, repeated cross-validation, out-of-fold predictions, and ranked model coefficients.
 
 ```python
-from src.host_specific_recovery.ML_models.random_forest import (
-    MicrobiomeRandomForestRegressor,
+from src.host_specific_recovery.ML_models.linear_regression import (
+    MicrobiomeRegularizedLinearRegressor,
 )
 
 X = baseline_abundance_table.T.add_prefix("taxonomic__")
 y = recovery_scores
 
-model = MicrobiomeRandomForestRegressor(
+model = MicrobiomeRegularizedLinearRegressor(
     min_prevalence=0.3,
     transform="clr",
-    n_estimators=1000,
-    min_samples_leaf=2,
-    max_features="sqrt",
+    model_type="ridge",
+    alpha=0.1,
     random_state=0,
 )
 
@@ -159,7 +157,7 @@ Example command:
 python analysis/null_model/Yaffe_et_al/null_model_analysis.py
 ```
 
-The Yaffe et al. standardized-Jaccard regression workflow, including random forest regression, is located at:
+The Yaffe et al. standardized-Jaccard regression workflow using the regularized linear model is located at:
 
 ```text
 analysis/SDA_regression/Yaffe_et_al/standardized_jaccard_regression.py
